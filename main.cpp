@@ -14,18 +14,11 @@
  *
  ******************************************************************************/
 
+// FOR TESTING ONLY
+
 #include "lox.h"
-#include "interpreter.h"
 
-#include <iostream>
-
-namespace lox
+int main()
 {
-
-void run()
-{
-    Interpreter interpreter;
-    interpreter.run();
+    lox::run();
 }
-
-} // namespace lox

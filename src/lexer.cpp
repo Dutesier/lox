@@ -17,6 +17,38 @@
 #include "lexer.h"
 #include "logger.h"
 
+#include <sstream>
+#include <string>
+#include <unordered_map>
+namespace
+{
+
+bool isDigit(char c)
+{
+    return c >= '0' && c <= '9';
+}
+
+bool isAlpha(char c)
+{
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+}
+
+bool isAlphaNumeric(char c)
+{
+    return isAlpha(c) || isDigit(c);
+}
+
+const std::unordered_map<std::string_view, lox::TokenType> KeywordsMap{
+    { "and", lox::TokenType::And },     { "class", lox::TokenType::Class },   { "else", lox::TokenType::Else },
+    { "false", lox::TokenType::False }, { "for", lox::TokenType::For },       { "fun", lox::TokenType::Fun },
+    { "if", lox::TokenType::If },       { "nil", lox::TokenType::Nil },       { "or", lox::TokenType::Or },
+    { "print", lox::TokenType::Print }, { "return", lox::TokenType::Return }, { "super", lox::TokenType::Super },
+    { "this", lox::TokenType::This },   { "true", lox::TokenType::True },     { "var", lox::TokenType::Var },
+    { "while", lox::TokenType::While }
+};
+
+} // namespace
+
 namespace lox
 {
 
@@ -29,12 +61,22 @@ std::vector<Token> Lexer::tokenize()
 {
     std::vector<Token> tokens{};
 
-    while (!isAtEnd())
+    while (true)
     {
+        auto tok = getNextToken();
         m_start = m_current;
-        tokens.emplace_back(getNextToken());
+        tokens.emplace_back(tok);
+        if (tok.type == TokenType::Eof)
+        {
+            break;
+        }
     }
-    tokens.emplace_back(Token{ TokenType::Eof, "", m_line });
+    for (auto tok : tokens)
+    {
+        std::stringstream ss;
+        ss << tok;
+        Logger::debug(std::format("Got Token: {}", ss.str()));
+    }
     return tokens;
 }
 
@@ -45,65 +87,189 @@ char Lexer::advance()
 
 Token Lexer::getNextToken()
 {
+    if (isAtEnd())
+    {
+        return Token{ Eof, std::monostate{}, "", m_line };
+    }
+
     using enum TokenType;
     char c = advance();
+    // Logger::debug(std::format("Evalutating {}", c));
     switch (c)
     {
     case '(':
-        return Token{ LeftParen };
+        return Token{ LeftParen, std::monostate{}, "", m_line };
     case ')':
-        return Token{ RightParen };
+        return Token{ RightParen, std::monostate{}, "", m_line };
     case '{':
-        return Token{ LeftParen };
+        return Token{ LeftBrace, std::monostate{}, "", m_line };
     case '}':
-        return Token{ RightBrace };
+        return Token{ RightBrace, std::monostate{}, "", m_line };
     case ',':
-        return Token{ Comma };
+        return Token{ Comma, std::monostate{}, "", m_line };
     case '.':
-        return Token{ Dot };
+        return Token{ Dot, std::monostate{}, "", m_line };
     case '-':
-        return Token{ Minus };
+        return Token{ Minus, std::monostate{}, "", m_line };
     case '+':
-        return Token{ Plus };
+        return Token{ Plus, std::monostate{}, "", m_line };
     case ';':
-        return Token{ Semicolon };
+        return Token{ Semicolon, std::monostate{}, "", m_line };
     case '*':
-        return Token{ Star };
+        return Token{ Star, std::monostate{}, "", m_line };
     case '!':
         if (match('='))
         {
             advance();
-            return Token{ BangEqual };
+            return Token{ BangEqual, std::monostate{}, "", m_line };
         }
-        return Token{ Bang };
-        break;
+        return Token{ Bang, std::monostate{}, "", m_line };
     case '=':
         if (match('='))
         {
             advance();
-            return Token{ EqualEqual };
+            return Token{ EqualEqual, std::monostate{}, "", m_line };
         }
-        return Token{ Equal };
-        break;
+        return Token{ Equal, std::monostate{}, "", m_line };
     case '<':
         if (match('='))
         {
             advance();
-            return Token{ LessEqual };
+            return Token{ LessEqual, std::monostate{}, "", m_line };
         }
-        return Token{ Less };
-        break;
+        return Token{ Less, std::monostate{}, "", m_line };
     case '>':
         if (match('='))
         {
             advance();
-            return Token{ GreaterEqual };
+            return Token{ GreaterEqual, std::monostate{}, "", m_line };
         }
-        return Token{ Greater };
-        break;
+        return Token{ Greater, std::monostate{}, "", m_line };
+    case '/':
+        if (match('/')) // Comments
+        {
+            advanceUntilEndOfLine();
+            return rerun();
+        }
+        return Token{ Slash, std::monostate{}, "", m_line };
+    case ' ':
+    case '\r':
+    case '\t':
+        // Ignore whitespace.
+        return rerun();
+    case '\n':
+        m_line++;
+        return rerun();
+
+    // Literals
+    case '"':
+        return getStringToken();
+    default:
+        if (isDigit(c))
+        {
+            return getNumberToken();
+        }
+        else if (isAlpha(c))
+        {
+            return getIdentifierToken();
+        }
     }
-    Logger::error(std::format("[Line {}] Unexpected character.", m_line));
-    return Token{ Eof };
+    Logger::error(std::format("[Line {}] Unexpected character -> {}.", m_line, c));
+    return Token{ Error, std::monostate{}, std::string{ c }, m_line }; // Maybe throw here???
+}
+
+Token Lexer::rerun()
+{
+    m_start = m_current;
+    return getNextToken();
+}
+
+Token Lexer::getStringToken()
+{
+    // Get to end of string
+    while (peek() != '"')
+    {
+        Logger::debug(std::format("peek is {}", peek()));
+        if (isAtEnd())
+        {
+            return Token{ Error, std::monostate{}, "Unterminated string.", m_line }; // Maybe throw here???
+        }
+        if (peek() == '\n')
+        {
+            m_line++;
+        }
+        advance();
+    }
+
+    if (advance() != '"') // The closing '"'
+    {
+        return Token{ Error, std::monostate{}, "Unterminated string.", m_line }; // Maybe throw here???
+    }
+
+    Logger::debug(std::format(
+        "Building token with value {}, from index {} to index {}",
+        m_source.substr(m_start + 1, m_current - (m_start + 1) - 1),
+        m_start + 1,
+        m_current - (m_start + 1) - 1));
+    return Token{
+        String, m_source.substr(m_start + 1, m_current - (m_start + 1) - 1), "", m_line
+    }; // Maybe throw here???
+}
+
+Token Lexer::getNumberToken()
+{
+    // In Lox every number is double!
+    while (isDigit(peek()))
+    {
+        advance();
+    }
+
+    // Look for a fractional part.
+    if (peek() == '.' && isDigit(peekNext()))
+    {
+        // Consume the "."
+        advance();
+
+        while (isDigit(peek()))
+        {
+            advance();
+        }
+    }
+
+    auto str = m_source.substr(m_start, m_current - m_start);
+    try
+    {
+        std::size_t index;
+        double value = std::stod(str.data(), &index);
+        return Token{ Number, std::move(value), "", m_line }; // Maybe throw here???
+    }
+    catch (const std::invalid_argument& e)
+    {
+        std::cerr << "Invalid argument: " << e.what() << std::endl;
+        return Token{ Error, std::monostate{}, str, m_line }; // Maybe throw here???
+    }
+    catch (const std::out_of_range& e)
+    {
+        std::cerr << "Out of range: " << e.what() << std::endl;
+        return Token{ Error, std::monostate{}, str, m_line }; // Maybe throw here???
+    }
+}
+
+Token Lexer::getIdentifierToken()
+{
+    while (isAlphaNumeric(peek()))
+    {
+        advance();
+    }
+
+    auto text = m_source.substr(m_start, m_current - m_start);
+    auto type = TokenType::Identifier;
+    if (KeywordsMap.contains(text))
+    {
+        type = KeywordsMap.at(text);
+        return Token{ type, std::monostate{} };
+    }
+    return Token{ type, text };
 }
 
 bool Lexer::isAtEnd()
@@ -122,6 +288,35 @@ bool Lexer::match(char next)
         return false;
     }
     return true;
+}
+
+void Lexer::advanceUntilEndOfLine()
+{
+    constexpr char NewLine = '\n';
+    while (peek() != NewLine && !isAtEnd())
+    {
+        advance();
+    }
+}
+
+char Lexer::peek()
+{
+    constexpr char NullTerminator = '\0';
+    if (isAtEnd())
+    {
+        return NullTerminator;
+    }
+    return m_source.at(m_current);
+}
+
+char Lexer::peekNext()
+{
+    constexpr char NullTerminator = '\0';
+    if (m_current + 1 >= m_source.size())
+    {
+        return NullTerminator;
+    }
+    return m_source.at(m_current + 1);
 }
 
 } // namespace lox

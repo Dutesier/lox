@@ -18,6 +18,7 @@
 
 #include <ostream>
 #include <string_view>
+#include <variant>
 
 namespace lox
 {
@@ -70,12 +71,15 @@ enum TokenType
     Var,
     While,
 
-    Eof
+    Eof,
+
+    Error,
 };
 
 struct Token
 {
     TokenType type;
+    std::variant<std::monostate, std::string_view, double> literal;
     std::string_view location{};
     unsigned int lineNo{};
 

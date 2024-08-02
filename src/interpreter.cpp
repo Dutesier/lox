@@ -87,6 +87,9 @@ int Interpreter::interpret(const std::string& content)
     }
 
     m_logger.debug(std::format("[interpret]: Content: {}", content));
+    std::string_view content_view{ content };
+    m_lexer = std::make_unique<Lexer>(std::move(content_view));
+    m_lexer->tokenize();
     return EXIT_SUCCESS;
 }
 

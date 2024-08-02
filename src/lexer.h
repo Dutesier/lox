@@ -35,6 +35,16 @@ private:
     Token getNextToken();
     char advance();
     bool match(char next);
+    char peek();     // Lookahead
+    char peekNext(); // Lookahead of 2
+
+    Token getStringToken();
+    Token getNumberToken();
+    Token getIdentifierToken();
+
+    Token rerun();
+
+    void advanceUntilEndOfLine();
 
     bool isAtEnd();
     std::string_view m_source;

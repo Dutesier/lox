@@ -16,9 +16,11 @@
 
 #pragma once
 
+#include "lexer.h"
 #include "logger.h"
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
 
@@ -41,6 +43,7 @@ private:
     void logError(unsigned int line, std::string_view location, std::string_view message);
 
     std::optional<std::filesystem::path> m_path;
+    std::unique_ptr<Lexer> m_lexer;
     Logger m_logger;
 };
 

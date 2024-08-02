@@ -33,15 +33,57 @@ protected:
 
 TEST_F(TestLexer, tokenizeHelloWorld)
 {
-    std::string_view HelloWorld = "Hello, World!";
+    using enum lox::TokenType;
+    std::string_view HelloWorld = "// this is a comment\n(( )){} // grouping stuff\n!*+-/=<> <= == // operators";
     std::vector<lox::Token> expectedTokens{};
+    expectedTokens.emplace_back(lox::Token{ LeftParen, std::monostate{} });
+    expectedTokens.emplace_back(lox::Token{ LeftParen, std::monostate{} });
+    expectedTokens.emplace_back(lox::Token{ RightParen, std::monostate{} });
+    expectedTokens.emplace_back(lox::Token{ RightParen, std::monostate{} });
+    expectedTokens.emplace_back(lox::Token{ LeftBrace, std::monostate{} });
+    expectedTokens.emplace_back(lox::Token{ RightBrace, std::monostate{} });
+    expectedTokens.emplace_back(lox::Token{ Bang, std::monostate{} });
+    expectedTokens.emplace_back(lox::Token{ Star, std::monostate{} });
+    expectedTokens.emplace_back(lox::Token{ Plus, std::monostate{} });
+    expectedTokens.emplace_back(lox::Token{ Minus, std::monostate{} });
+    expectedTokens.emplace_back(lox::Token{ Slash, std::monostate{} });
+    expectedTokens.emplace_back(lox::Token{ Equal, std::monostate{} });
+    expectedTokens.emplace_back(lox::Token{ Less, std::monostate{} });
+    expectedTokens.emplace_back(lox::Token{ Greater, std::monostate{} });
+    expectedTokens.emplace_back(lox::Token{ LessEqual, std::monostate{} });
+    expectedTokens.emplace_back(lox::Token{ EqualEqual, std::monostate{} });
+    expectedTokens.emplace_back(lox::Token{ Eof, std::monostate{} });
     lox::Lexer lex(HelloWorld);
 
     auto output = lex.tokenize();
 
     ASSERT_EQ(expectedTokens.size(), output.size());
-    for (auto i = 0; i < output.size(); ++i)
+    for (std::size_t i = 0; i < output.size(); ++i)
     {
-        EXPECT_EQ(output[i], expectedTokens[i]);
+        EXPECT_EQ(output[i].type, expectedTokens[i].type);
     }
+}
+
+TEST_F(TestLexer, tokenizeDouble)
+{
+    using enum lox::TokenType;
+    lox::Lexer lex("42.42");
+
+    auto output = lex.tokenize();
+    ASSERT_EQ(output.size(), 2);
+    double expected = 42.42;
+    auto expectedTok = lox::Token{ Number, expected, "", 1 };
+    ASSERT_EQ(output.at(0), expectedTok);
+}
+
+TEST_F(TestLexer, tokenizeString)
+{
+    using enum lox::TokenType;
+    lox::Lexer lex("\"a given string\"");
+
+    auto output = lex.tokenize();
+    ASSERT_EQ(output.size(), 2);
+    std::string_view expected = "a given string";
+    auto expectedTok = lox::Token{ String, expected, "", 1 };
+    ASSERT_EQ(output.at(0), expectedTok);
 }
