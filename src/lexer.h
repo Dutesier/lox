@@ -45,6 +45,7 @@ private:
     Token rerun();
 
     void advanceUntilEndOfLine();
+    void advanceUntilEndOfComment();
 
     bool isAtEnd();
     std::string_view m_source;

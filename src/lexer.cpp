@@ -151,6 +151,11 @@ Token Lexer::getNextToken()
             advanceUntilEndOfLine();
             return rerun();
         }
+        else if (match('*')) // Multiline comments
+        {
+            advanceUntilEndOfComment();
+            return rerun();
+        }
         return Token{ Slash, std::monostate{}, "", m_line };
     case ' ':
     case '\r':
@@ -297,6 +302,21 @@ void Lexer::advanceUntilEndOfLine()
     {
         advance();
     }
+}
+
+void Lexer::advanceUntilEndOfComment()
+{
+    advance(); // consume the / in /*
+    advance(); // consume the * in /*
+    while (peek() != '*' && !isAtEnd() && peekNext() != '/')
+    {
+        if ('\n' == advance())
+        {
+            m_line++;
+        }
+    }
+    advance(); // consume the * in */
+    advance(); // consume the / in */
 }
 
 char Lexer::peek()

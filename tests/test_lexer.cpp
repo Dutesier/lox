@@ -87,3 +87,18 @@ TEST_F(TestLexer, tokenizeString)
     auto expectedTok = lox::Token{ String, expected, "", 1 };
     ASSERT_EQ(output.at(0), expectedTok);
 }
+
+TEST_F(TestLexer, tokenizeMultilineComment)
+{
+    using enum lox::TokenType;
+    lox::Lexer lex("\"a given string\" /* A multiline \n comment*/ 42 ");
+
+    auto output = lex.tokenize();
+    ASSERT_EQ(output.size(), 3);
+    double expectedDouble = 42;
+    std::string_view expected = "a given string";
+    auto expectedTok = lox::Token{ String, expected, "", 1 };
+    auto expectedDoubleTok = lox::Token{ Number, expectedDouble, "", 2 };
+    ASSERT_EQ(output.at(0), expectedTok);
+    ASSERT_EQ(output.at(1), expectedDoubleTok);
+}
