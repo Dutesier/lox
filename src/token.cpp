@@ -27,7 +27,7 @@ namespace lox
 namespace
 {
 
-std::string_view tokenTypeToStringView(TokenType type)
+std::string tokenTypeToString(TokenType type)
 {
     using enum TokenType;
     switch (type)
@@ -117,11 +117,11 @@ std::string_view tokenTypeToStringView(TokenType type)
     }
 }
 
-std::string_view literalToStringView(const std::variant<std::monostate, std::string_view, double>& tok)
+std::string literalToString(const std::variant<std::monostate, std::string_view, double>& tok)
 {
     if (std::holds_alternative<std::string_view>(tok))
     {
-        return std::get<std::string_view>(tok);
+        return std::get<std::string_view>(tok).data();
     }
     else if (std::holds_alternative<double>(tok))
     {
@@ -137,12 +137,16 @@ std::string_view literalToStringView(const std::variant<std::monostate, std::str
 
 } // namespace
 
+std::string Token::print() const
+{
+    return "(Token){\"type\": \"" + tokenTypeToString(type) + "\",\"literal\": \"" + literalToString(literal) +
+           "\",\"location\": \"" + (location.data() ? location.data() : "") +
+           "\",\"lineNo\": " + std::to_string(lineNo) + "}";
+}
+
 std::ostream& operator<<(std::ostream& os, const Token& me)
 {
-    os << "(Token){\"type\": \"" << tokenTypeToStringView(me.type) << "\",\"literal\": \""
-       << literalToStringView(me.literal) << "\",\"location\": \"" << me.location << "\",\"lineNo\": " << me.lineNo
-       << "}";
-    return os;
+    return os << me.print();
 }
 
 } // namespace lox

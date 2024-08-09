@@ -23,7 +23,9 @@ set(SRC_FILES
     src/interpreter.cpp
     src/logger.cpp
     src/lexer.cpp
+    src/parser.cpp
     src/token.cpp
+    src/BaseExpression.cpp
     )
 
 # Add the library target
@@ -42,9 +44,11 @@ enable_testing()
 
 # Add the test executable
 add_executable(LoxTest 
+    tests/test_AstPrinter.cpp
     tests/test_lox.cpp
     tests/test_interpreter.cpp
     tests/test_lexer.cpp
+    tests/test_parser.cpp
     )
 
 

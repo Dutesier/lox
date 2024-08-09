@@ -102,3 +102,18 @@ TEST_F(TestLexer, tokenizeMultilineComment)
     ASSERT_EQ(output.at(0), expectedTok);
     ASSERT_EQ(output.at(1), expectedDoubleTok);
 }
+
+TEST_F(TestLexer, tokenizeTwoStrings)
+{
+    using enum lox::TokenType;
+    lox::Lexer lex("\"hello\" + \"world\"");
+
+    auto output = lex.tokenize();
+    ASSERT_EQ(output.size(), 4);
+    std::string_view expectedOne = "hello";
+    std::string_view expectedTwo = "world";
+    auto expectedTokOne = lox::Token{ String, expectedOne, "", 1 };
+    auto expectedTokTwo = lox::Token{ String, expectedTwo, "", 1 };
+    ASSERT_EQ(output.at(0), expectedTokOne);
+    ASSERT_EQ(output.at(2), expectedTokTwo);
+}

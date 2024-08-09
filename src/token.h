@@ -78,12 +78,14 @@ enum TokenType
 
 struct Token
 {
+    using LiteralValues = std::variant<std::monostate, std::string_view, double>;
     TokenType type;
-    std::variant<std::monostate, std::string_view, double> literal;
+    LiteralValues literal = std::monostate{};
     std::string_view location{};
     unsigned int lineNo{};
 
-    bool operator==(const Token&) const = default;
+    bool operator==(const Token&) const = default; // DONT
+    std::string print() const;
 };
 std::ostream& operator<<(std::ostream& os, const Token& me);
 
