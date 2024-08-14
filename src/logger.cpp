@@ -65,4 +65,10 @@ void Logger::error(const std::string& data)
     return log(LogLevel::Error, data);
 }
 
+void Logger::terminal(const std::string& data)
+{
+    constexpr std::string_view term = ">\t";
+    std::cout << term << (data.data() ? data.data() : "");
+}
+
 } // namespace lox

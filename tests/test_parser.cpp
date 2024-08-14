@@ -41,7 +41,7 @@ TEST_F(TestParser, parseTokenExpression)
 
     Parser parser(tokens);
     auto expressionPtrOpt = parser.parse();
-    ASSERT_TRUE(expressionPtrOpt.has_value());
+    ASSERT_TRUE(!expressionPtrOpt.empty());
 
     // auto& expressionPtr = *(expressionPtrOpt.value());
     // AstPrinter printer;

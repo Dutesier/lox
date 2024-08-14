@@ -130,11 +130,11 @@ int Interpreter::interpretStdin()
 {
     auto exitCode = EXIT_FAILURE;
     std::string lineBuffer{};
-    std::cout << ">\t";
+    Logger::terminal("");
     while (getline(std::cin, lineBuffer))
     {
         exitCode = interpret(lineBuffer);
-        std::cout << ">\t";
+        Logger::terminal("");
     }
 
     return exitCode;
@@ -152,27 +152,56 @@ int Interpreter::interpret(const std::string& content)
     std::string_view content_view{ content };
     m_lexer = std::make_unique<Lexer>(std::move(content_view));
     m_parser = std::make_unique<Parser>(m_lexer->tokenize());
-    auto expr = m_parser->parse();
-    if (!expr)
+    auto statements = m_parser->parse();
+    if (statements.empty())
     {
         return EXIT_FAILURE;
     }
-    AstPrinter printer;
-    printer.print(*(expr.value())); // Refactor!!!!!!!!
 
-    try
+    AstPrinter printer;
+    for (const auto& stmt : statements)
     {
-        auto value = evaluate(*(expr.value()));
-        Logger::info(print(value));
-    }
-    catch (InterpreterException& e)
-    {
-        Logger::error("Runtime error: " + std::string{ e.what() });
-        return EXIT_FAILURE;
+        try
+        {
+            stmt->accept(*this);
+        }
+        catch (InterpreterException& e)
+        {
+            Logger::error("Runtime error: " + std::string{ e.what() });
+            return EXIT_FAILURE;
+        }
+        catch (Environment::EnvironmentException& e)
+        {
+            Logger::error("Runtime error: " + std::string{ e.what() });
+            return EXIT_FAILURE;
+        }
     }
 
     return EXIT_SUCCESS;
 }
+
+void Interpreter::visit(const PrintStatement& stmt)
+{
+    auto value = evaluate(*stmt.expr);
+    Logger::terminal(print(value) + '\n');
+}
+
+void Interpreter::visit(const ExpressionStatement& stmt)
+{
+    evaluate(*stmt.expr);
+}
+
+void Interpreter::visit(const VarStatement& stmt)
+{
+    assert(std::holds_alternative<std::string>(stmt.name.literal));
+    LiteralValues value = NullLiteral{};
+
+    if (stmt.expr)
+    {
+        value = evaluate(*stmt.expr);
+    }
+    m_env.define(std::get<std::string>(stmt.name.literal), value);
+};
 
 void Interpreter::logError(unsigned int line, std::string_view location, std::string_view message)
 {
@@ -264,6 +293,21 @@ LiteralValues Interpreter::visit(const UnaryExpression& expr)
     }
 
     return !isTruthy(right);
+}
+
+LiteralValues Interpreter::visit(const VariableExpression& expr)
+{
+    assert(std::holds_alternative<std::string>(expr.name.literal));
+    return m_env.get(std::get<std::string>(expr.name.literal));
+}
+
+LiteralValues Interpreter::visit(const AssignmentExpression& expr)
+{
+    assert(std::holds_alternative<std::string>(expr.name.literal));
+    auto key = std::get<std::string>(expr.name.literal);
+    auto value = evaluate(*expr.expr);
+    m_env.assign(key, value);
+    return value;
 }
 
 } // namespace lox

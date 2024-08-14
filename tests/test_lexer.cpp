@@ -83,7 +83,7 @@ TEST_F(TestLexer, tokenizeString)
 
     auto output = lex.tokenize();
     ASSERT_EQ(output.size(), 2);
-    std::string_view expected = "a given string";
+    std::string expected = "a given string";
     auto expectedTok = lox::Token{ String, expected, "", 1 };
     ASSERT_EQ(output.at(0), expectedTok);
 }
@@ -96,7 +96,7 @@ TEST_F(TestLexer, tokenizeMultilineComment)
     auto output = lex.tokenize();
     ASSERT_EQ(output.size(), 3);
     double expectedDouble = 42;
-    std::string_view expected = "a given string";
+    std::string expected = "a given string";
     auto expectedTok = lox::Token{ String, expected, "", 1 };
     auto expectedDoubleTok = lox::Token{ Number, expectedDouble, "", 2 };
     ASSERT_EQ(output.at(0), expectedTok);
@@ -110,8 +110,8 @@ TEST_F(TestLexer, tokenizeTwoStrings)
 
     auto output = lex.tokenize();
     ASSERT_EQ(output.size(), 4);
-    std::string_view expectedOne = "hello";
-    std::string_view expectedTwo = "world";
+    std::string expectedOne = "hello";
+    std::string expectedTwo = "world";
     auto expectedTokOne = lox::Token{ String, expectedOne, "", 1 };
     auto expectedTokTwo = lox::Token{ String, expectedTwo, "", 1 };
     ASSERT_EQ(output.at(0), expectedTokOne);

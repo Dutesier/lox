@@ -1,0 +1,92 @@
+/******************************************************************************
+ * Project:  Lox
+ * Brief:    A C++ Lox interpreter.
+ *
+ * This software is provided "as is," without warranty of any kind, express
+ * or implied, including but not limited to the warranties of merchantability,
+ * fitness for a particular purpose, and noninfringement. In no event shall
+ * the authors or copyright holders be liable for any claim, damages, or
+ * other liability, whether in an action of contract, tort, or otherwise,
+ * arising from, out of, or in connection with the software or the use or
+ * other dealings in the software.
+ *
+ * Author:   Dutesier
+ *
+ ******************************************************************************/
+
+#pragma once
+
+#include "BaseExpression.h"
+
+#include <iostream>
+#include <memory>
+#include <type_traits>
+#include <variant>
+
+namespace lox
+{
+
+class ExpressionStatement;
+class PrintStatement;
+class VarStatement;
+
+class StatementVisitor
+{
+public:
+    virtual ~StatementVisitor() = default;
+
+    virtual void visit(const ExpressionStatement& statement) = 0;
+    virtual void visit(const PrintStatement& statement) = 0;
+    virtual void visit(const VarStatement& statement) = 0;
+};
+
+class Statement
+{
+public:
+    virtual ~Statement() = default;
+    // Accept method for the Visitor pattern
+    virtual void accept(StatementVisitor& visitor) const = 0;
+};
+
+class ExpressionStatement : public Statement
+{
+public:
+    ExpressionStatement(std::unique_ptr<Expression> expr)
+        : expr(std::move(expr))
+    {
+    }
+
+    void accept(StatementVisitor& visitor) const { visitor.visit(*this); };
+
+    std::unique_ptr<Expression> expr;
+};
+
+class PrintStatement : public Statement
+{
+public:
+    PrintStatement(std::unique_ptr<Expression> expr)
+        : expr(std::move(expr))
+    {
+    }
+
+    void accept(StatementVisitor& visitor) const { visitor.visit(*this); };
+
+    std::unique_ptr<Expression> expr;
+};
+
+class VarStatement : public Statement
+{
+public:
+    VarStatement(Token name, std::unique_ptr<Expression> expr)
+        : name(std::move(name))
+        , expr(std::move(expr))
+    {
+    }
+
+    void accept(StatementVisitor& visitor) const { visitor.visit(*this); };
+
+    Token name;
+    std::unique_ptr<Expression> expr;
+};
+
+} // namespace lox

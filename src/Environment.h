@@ -16,31 +16,39 @@
 
 #pragma once
 
-#include <format>
-#include <iostream>
-#include <string_view>
+#include "BaseExpression.h"
+
+#include <unordered_map>
 
 namespace lox
 {
 
-struct Logger
+class Environment
 {
 public:
-    static void info(const std::string& data);
-    static void debug(const std::string& data);
-    static void warn(const std::string& data);
-    static void error(const std::string& data);
-    static void terminal(const std::string& data);
+    void define(std::string key, LiteralValues value);
+    LiteralValues get(const std::string& key);
+    void assign(std::string key, LiteralValues value);
 
 private:
-    enum LogLevel
+    std::unordered_map<std::string, LiteralValues> m_variables;
+
+public:
+    // Custom exception class
+    class EnvironmentException : public std::exception
     {
-        Debug,
-        Info,
-        Warn,
-        Error
+    private:
+        std::string message;
+
+    public:
+        EnvironmentException(const std::string& msg)
+            : message("Error: Tried to access undeclared variable " + msg + ".")
+        {
+        }
+
+        // Override the what() function to return the error message
+        const char* what() const noexcept override { return message.c_str(); }
     };
-    static void log(LogLevel level, std::string_view data);
 };
 
 } // namespace lox

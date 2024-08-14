@@ -36,6 +36,8 @@ using LiteralValues = std::variant<std::string, double, bool, NullLiteral>;
 std::string print(const LiteralValues& values);
 class UnaryExpression;
 class GroupingExpression;
+class VariableExpression;
+class AssignmentExpression;
 
 class ExpressionVisitor
 {
@@ -46,6 +48,8 @@ public:
     virtual LiteralValues visit(const LiteralExpression& expr) = 0;
     virtual LiteralValues visit(const UnaryExpression& expr) = 0;
     virtual LiteralValues visit(const GroupingExpression& expr) = 0;
+    virtual LiteralValues visit(const VariableExpression& expr) = 0;
+    virtual LiteralValues visit(const AssignmentExpression& expr) = 0;
 };
 
 class Expression
@@ -113,6 +117,34 @@ public:
     LiteralValues accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
 
     std::unique_ptr<Expression> expression;
+};
+
+class VariableExpression : public Expression
+{
+public:
+    VariableExpression(Token name)
+        : name(std::move(name))
+    {
+    }
+
+    LiteralValues accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
+
+    Token name;
+};
+
+class AssignmentExpression : public Expression
+{
+public:
+    AssignmentExpression(Token name, std::unique_ptr<Expression> expr)
+        : name(std::move(name))
+        , expr(std::move(expr))
+    {
+    }
+
+    LiteralValues accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
+
+    Token name;
+    std::unique_ptr<Expression> expr;
 };
 
 } // namespace lox

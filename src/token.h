@@ -78,15 +78,15 @@ enum TokenType
 
 struct Token
 {
-    using LiteralValues = std::variant<std::monostate, std::string_view, double>;
+    using LiteralValues = std::variant<std::monostate, std::string, double>;
     TokenType type;
     LiteralValues literal = std::monostate{};
     std::string_view location{};
     unsigned int lineNo{};
 
-    bool operator==(const Token&) const = default; // DONT
     std::string print() const;
 };
+bool operator==(const Token& lhs, const Token& rhs);
 std::ostream& operator<<(std::ostream& os, const Token& me);
 
 } // namespace lox

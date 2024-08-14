@@ -16,11 +16,13 @@
 
 #pragma once
 
+#include "Environment.h"
 #include "lexer.h"
 #include "logger.h"
 #include "parser.h"
 
 #include "BaseExpression.h"
+#include "BaseStatement.h"
 
 #include <filesystem>
 #include <memory>
@@ -30,7 +32,9 @@
 namespace lox
 {
 
-class Interpreter : public ExpressionVisitor
+class Interpreter
+    : public ExpressionVisitor
+    , public StatementVisitor
 {
 public:
     Interpreter();
@@ -41,6 +45,12 @@ public:
     LiteralValues visit(const LiteralExpression& expr) override;
     LiteralValues visit(const GroupingExpression& expr) override;
     LiteralValues visit(const UnaryExpression& expr) override;
+    LiteralValues visit(const VariableExpression& expr) override;
+    LiteralValues visit(const AssignmentExpression& expr) override;
+
+    void visit(const PrintStatement& stmt) override;
+    void visit(const ExpressionStatement& stmt) override;
+    void visit(const VarStatement& stmt) override;
 
 private:
     int interpretFile();
@@ -54,6 +64,7 @@ private:
     std::optional<std::filesystem::path> m_path;
     std::unique_ptr<Lexer> m_lexer;
     std::unique_ptr<Parser> m_parser;
+    Environment m_env;
     Logger m_logger;
 
 public:

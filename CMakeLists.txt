@@ -26,6 +26,7 @@ set(SRC_FILES
     src/parser.cpp
     src/token.cpp
     src/BaseExpression.cpp
+    src/Environment.cpp
     )
 
 # Add the library target

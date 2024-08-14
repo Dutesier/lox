@@ -17,6 +17,7 @@
 #pragma once
 
 #include "BaseExpression.h"
+#include "BaseStatement.h"
 #include "token.h"
 
 #include <functional>
@@ -27,13 +28,15 @@ namespace lox
 {
 
 using ExpressionUPTR = std::unique_ptr<Expression>;
+using StatementUPTR = std::unique_ptr<Statement>;
 
 class Parser
 {
 public:
     Parser(std::vector<Token> tokens);
 
-    std::optional<ExpressionUPTR> parse();
+    // std::optional<ExpressionUPTR> parse();
+    std::vector<StatementUPTR> parse();
 
     class ParserException;
 
@@ -41,8 +44,22 @@ private:
     using MatchingFn = std::function<bool(void)>;
     using ExpressionProducingFn = std::function<ExpressionUPTR(void)>;
 
-    // expression     → comma ;
+    // declaration    → varDecl
+    //                 | statement ;
+    StatementUPTR declaration();
+    // "var" IDENTIFIER ( "=" expression )? ";" ;
+    StatementUPTR varDeclaration();
+
+    // statement      → expression
+    //                  | "print" expression
+    StatementUPTR statement();
+    StatementUPTR printStatement();
+    StatementUPTR expressionStatement();
+
+    // expression     → assignement ;
     ExpressionUPTR expression();
+    // assignment     → IDENTIFIER '=' comma;
+    ExpressionUPTR assignment();
     // comma          → ternary ( ","  ternary )* ;
     ExpressionUPTR comma();
     // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
@@ -57,7 +74,7 @@ private:
     //                | primary ;
     ExpressionUPTR unary();
     // primary        → NUMBER | STRING | "true" | "false" | "nil"
-    //                | "(" expression ")" ;
+    //                | "(" expression ")" | IDENTIFIER ;
     ExpressionUPTR primary();
 
     // Challenge to perhaps tackle in the future
@@ -97,7 +114,7 @@ public:
             : token(token)
             , message(
                   "Parser Error: " + msg + " at line " + std::to_string(token.lineNo) + ", location " +
-                  token.location.data() + ".")
+                  (token.location.data() ? token.location.data() : "") + ".")
         {
         }
 

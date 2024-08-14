@@ -211,13 +211,13 @@ Token Lexer::getStringToken()
         return Token{ Error, std::monostate{}, "Unterminated string.", m_line }; // Maybe throw here???
     }
 
-    Logger::debug(std::format(
-        "Building token with value {}, from index {} to index {}",
-        m_source.substr(m_start + 1, m_current - (m_start + 1) - 1),
-        m_start + 1,
-        m_current - (m_start + 1) - 1));
+    // Logger::debug(std::format(
+    //     "Building token with value {}, from index {} to index {}",
+    //     std::string{ m_source.substr(m_start + 1, m_current - (m_start + 1) - 1) },
+    //     m_start + 1,
+    //     m_current - (m_start + 1) - 1));
     return Token{
-        String, m_source.substr(m_start + 1, m_current - (m_start + 1) - 1), "", m_line
+        String, std::string{ m_source.substr(m_start + 1, m_current - (m_start + 1) - 1) }, "", m_line
     }; // Maybe throw here???
 }
 
@@ -241,7 +241,7 @@ Token Lexer::getNumberToken()
         }
     }
 
-    auto str = m_source.substr(m_start, m_current - m_start);
+    auto str = std::string{ m_source.substr(m_start, m_current - m_start) };
     try
     {
         std::size_t index;
@@ -267,7 +267,7 @@ Token Lexer::getIdentifierToken()
         advance();
     }
 
-    auto text = m_source.substr(m_start, m_current - m_start);
+    auto text = std::string{ m_source.substr(m_start, m_current - m_start) };
     auto type = TokenType::Identifier;
     if (KeywordsMap.contains(text))
     {

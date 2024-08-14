@@ -26,7 +26,7 @@ namespace lox
 class AstPrinter : public ExpressionVisitor
 {
 public:
-    void print(Expression& expr)
+    void print(const Expression& expr)
     {
         expr.accept(*this);
         std::cout << std::endl;
@@ -62,6 +62,23 @@ public:
     {
         std::cout << "Grouping(";
         expr.expression->accept(*this);
+        std::cout << ")";
+        return NullLiteral{};
+    }
+
+    LiteralValues visit(const VariableExpression& expr) override
+    {
+        std::cout << "Variable("
+                  << " Name: " << expr.name;
+        std::cout << ")";
+        return NullLiteral{};
+    }
+
+    LiteralValues visit(const AssignmentExpression& expr) override
+    {
+        std::cout << "Assignment("
+                  << " Name: " << expr.name;
+        expr.expr->accept(*this);
         std::cout << ")";
         return NullLiteral{};
     }

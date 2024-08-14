@@ -26,27 +26,82 @@ Parser::Parser(std::vector<Token> tokens)
 {
 }
 
-std::optional<ExpressionUPTR> Parser::parse()
+std::vector<StatementUPTR> Parser::parse()
 {
-    try
+    std::vector<StatementUPTR> statements;
+    while (!isAtEnd())
     {
-        return expression();
+        try
+        {
+            statements.emplace_back(declaration());
+        }
+        catch (ParserException& error)
+        {
+            Logger::error("Failed parsing. " + std::string{ error.what() });
+            synchronize();
+            break;
+        }
     }
-    catch (ParserException& error)
+
+    return statements;
+}
+
+StatementUPTR Parser::declaration()
+{
+    if (match(Var))
     {
-        Logger::error("Failed parsing. " + std::string{ error.what() });
-        return std::nullopt;
+        return varDeclaration();
     }
+    return statement();
+}
+
+StatementUPTR Parser::varDeclaration()
+{
+    Token name = consumeOrThrow(Identifier, "Expected an identifier.");
+    std::unique_ptr<Expression> expr;
+    if (match(Equal))
+    {
+        expr = expression();
+    }
+    consumeOrThrow(Semicolon, "Expected semicolon after variable declaration.");
+
+    return std::make_unique<VarStatement>(name, std::move(expr));
+}
+
+StatementUPTR Parser::statement()
+{
+    if (match(TokenType::Print))
+    {
+        return printStatement();
+    }
+    return expressionStatement();
+}
+
+StatementUPTR Parser::printStatement()
+{
+    // Logger::debug("printStatement");
+    auto value = expression();
+    consumeOrThrow(TokenType::Semicolon, "Expect ';' after value.");
+    return std::make_unique<PrintStatement>(std::move(value));
+}
+
+StatementUPTR Parser::expressionStatement()
+{
+    // Logger::debug("expressionStatement");
+    auto value = expression();
+    consumeOrThrow(TokenType::Semicolon, "Expect ';' after value.");
+    return std::make_unique<ExpressionStatement>(std::move(value));
 }
 
 ExpressionUPTR Parser::expression()
 {
     // Logger::debug("expression");
-    return comma();
+    return assignment();
 }
 
 ExpressionUPTR Parser::buildBinaryExpression(ExpressionProducingFn lowerPrecedenceFn, MatchingFn matchFn)
 {
+    // Logger::debug("building binary expression");
     auto lowerPrecedence = lowerPrecedenceFn();
     while (matchFn())
     {
@@ -57,9 +112,27 @@ ExpressionUPTR Parser::buildBinaryExpression(ExpressionProducingFn lowerPreceden
     return lowerPrecedence;
 }
 
+ExpressionUPTR Parser::assignment()
+{
+    // Logger::debug("assignment");
+    std::unique_ptr<Expression> expr = comma();
+
+    if (match(Equal))
+    {
+        Token equals = previous();
+        auto value = assignment();
+        if (auto&& var = dynamic_cast<VariableExpression*>(expr.get()))
+        {
+            return std::make_unique<AssignmentExpression>(var->name, std::move(value));
+        }
+        error(equals, "Invalid assignment target");
+    }
+    return expr;
+}
+
 ExpressionUPTR Parser::comma()
 {
-    Logger::debug("comma");
+    // Logger::debug("comma");
     ExpressionProducingFn lowerPrecedenceFn = [this]() { return equality(); };
     MatchingFn matchingFn = [this]()
     {
@@ -135,10 +208,9 @@ ExpressionUPTR literalExpressionFromLiteralToken(const Token& tok)
     {
         return std::make_unique<LiteralExpression>(std::get<double>(tok.literal));
     }
-    else if (std::holds_alternative<std::string_view>(tok.literal))
+    else if (std::holds_alternative<std::string>(tok.literal))
     {
-        auto str = std::get<std::string_view>(tok.literal);
-        return std::make_unique<LiteralExpression>(str.data() ? std::string{ str.data() } : std::string{});
+        return std::make_unique<LiteralExpression>(std::get<std::string>(tok.literal));
     }
     else
     {
@@ -168,6 +240,11 @@ ExpressionUPTR Parser::primary()
     if (match(Number) || match(String))
     {
         return literalExpressionFromLiteralToken(previous());
+    }
+
+    if (match(Identifier))
+    {
+        return std::make_unique<VariableExpression>(previous());
     }
 
     if (match(LeftParen))

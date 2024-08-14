@@ -14,33 +14,32 @@
  *
  ******************************************************************************/
 
-#pragma once
-
-#include <format>
-#include <iostream>
-#include <string_view>
+#include "Environment.h"
 
 namespace lox
 {
 
-struct Logger
+void Environment::define(std::string key, LiteralValues value)
 {
-public:
-    static void info(const std::string& data);
-    static void debug(const std::string& data);
-    static void warn(const std::string& data);
-    static void error(const std::string& data);
-    static void terminal(const std::string& data);
+    m_variables[std::move(key)] = std::move(value);
+}
 
-private:
-    enum LogLevel
+LiteralValues Environment::get(const std::string& key)
+{
+    if (!m_variables.contains(key))
     {
-        Debug,
-        Info,
-        Warn,
-        Error
-    };
-    static void log(LogLevel level, std::string_view data);
-};
+        throw EnvironmentException{ key };
+    }
+    return m_variables[key];
+}
+
+void Environment::assign(std::string key, LiteralValues value)
+{
+    if (!m_variables.contains(key))
+    {
+        throw EnvironmentException{ key };
+    }
+    m_variables[key] = value;
+}
 
 } // namespace lox

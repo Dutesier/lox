@@ -117,11 +117,11 @@ std::string tokenTypeToString(TokenType type)
     }
 }
 
-std::string literalToString(const std::variant<std::monostate, std::string_view, double>& tok)
+std::string literalToString(const Token::LiteralValues& tok)
 {
-    if (std::holds_alternative<std::string_view>(tok))
+    if (std::holds_alternative<std::string>(tok))
     {
-        return std::get<std::string_view>(tok).data();
+        return std::get<std::string>(tok);
     }
     else if (std::holds_alternative<double>(tok))
     {
@@ -133,6 +133,26 @@ std::string literalToString(const std::variant<std::monostate, std::string_view,
     {
         return "no-literal-value";
     }
+}
+
+bool literalEquals(const Token::LiteralValues& lhs, const Token::LiteralValues& rhs)
+{
+    if (std::holds_alternative<std::monostate>(lhs) && std::holds_alternative<std::monostate>(rhs))
+    {
+        return true;
+    }
+
+    if (std::holds_alternative<std::string>(lhs) && std::holds_alternative<std::string>(rhs))
+    {
+        return std::get<std::string>(lhs) == std::get<std::string>(rhs);
+    }
+
+    if (std::holds_alternative<double>(lhs) && std::holds_alternative<double>(rhs))
+    {
+        return std::get<double>(lhs) == std::get<double>(rhs);
+    }
+
+    return false;
 }
 
 } // namespace
@@ -147,6 +167,12 @@ std::string Token::print() const
 std::ostream& operator<<(std::ostream& os, const Token& me)
 {
     return os << me.print();
+}
+
+bool operator==(const Token& lhs, const Token& rhs)
+{
+    return lhs.type == rhs.type && lhs.lineNo == rhs.lineNo && lhs.location == rhs.location &&
+           literalEquals(lhs.literal, rhs.literal);
 }
 
 } // namespace lox
