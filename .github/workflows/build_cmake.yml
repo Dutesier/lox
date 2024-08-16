@@ -28,17 +28,17 @@ jobs:
         - {
             name: "Windows Latest MinGW", artifact: "Windows-MinGW",
             os: windows-latest,
-            cc: "gcc-10", cxx: "g++-10"
+            cc: "gcc-13", cxx: "g++-13"
           }
         - {
             name: "Ubuntu Latest GCC", artifact: "Linux",
             os: ubuntu-latest,
-            cc: "gcc-10", cxx: "g++-10"
+            cc: "gcc-13", cxx: "g++-13"
           }
         - {
             name: "macOS Latest Clang", artifact: "macOS",
             os: macos-latest,
-            cc: "clang-10", cxx: "clang++-10"
+            cc: "clang-13", cxx: "clang++-13"
           }
 
     steps:
