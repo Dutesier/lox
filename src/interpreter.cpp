@@ -159,6 +159,8 @@ int Interpreter::interpret(const std::string& content)
     }
 
     AstPrinter printer;
+
+    m_env = std::make_unique<Environment>();
     for (const auto& stmt : statements)
     {
         try
@@ -200,8 +202,29 @@ void Interpreter::visit(const VarStatement& stmt)
     {
         value = evaluate(*stmt.expr);
     }
-    m_env.define(std::get<std::string>(stmt.name.literal), value);
+    m_env->define(std::get<std::string>(stmt.name.literal), value);
 };
+
+void Interpreter::visit(const BlockStatement& stmt)
+{
+    // Store the outer environment
+    std::unique_ptr<Environment> previous = std::move(this->m_env);
+    try
+    {
+        // Create a new environment for the current block
+        m_env = std::make_unique<Environment>(previous.get());
+        for (const auto& statement : stmt.statements)
+        {
+            statement->accept(*this);
+        }
+    }
+    catch (InterpreterException& e)
+    {
+        Logger::error(e.what());
+    }
+    // Reset the environment (a la stack)
+    m_env = std::move(previous);
+}
 
 void Interpreter::logError(unsigned int line, std::string_view location, std::string_view message)
 {
@@ -298,7 +321,7 @@ LiteralValues Interpreter::visit(const UnaryExpression& expr)
 LiteralValues Interpreter::visit(const VariableExpression& expr)
 {
     assert(std::holds_alternative<std::string>(expr.name.literal));
-    return m_env.get(std::get<std::string>(expr.name.literal));
+    return m_env->get(std::get<std::string>(expr.name.literal));
 }
 
 LiteralValues Interpreter::visit(const AssignmentExpression& expr)
@@ -306,7 +329,7 @@ LiteralValues Interpreter::visit(const AssignmentExpression& expr)
     assert(std::holds_alternative<std::string>(expr.name.literal));
     auto key = std::get<std::string>(expr.name.literal);
     auto value = evaluate(*expr.expr);
-    m_env.assign(key, value);
+    m_env->assign(key, value);
     return value;
 }
 

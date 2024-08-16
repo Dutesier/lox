@@ -19,6 +19,18 @@
 namespace lox
 {
 
+Environment::Environment(Environment* parent)
+    : m_enclosing(parent)
+    , m_isRootNode(m_enclosing != nullptr)
+{
+}
+
+// Environment& Environment::operator=(const Environment& other){}
+// Environment::Environment(const Environment& other){}
+
+// Environment::Environment& operator=(Environment&& other){}
+// Environment::Environment(Environment&& other){}
+
 void Environment::define(std::string key, LiteralValues value)
 {
     m_variables[std::move(key)] = std::move(value);
@@ -28,7 +40,11 @@ LiteralValues Environment::get(const std::string& key)
 {
     if (!m_variables.contains(key))
     {
-        throw EnvironmentException{ key };
+        if (m_isRootNode || m_enclosing == nullptr)
+        {
+            throw EnvironmentException{ key };
+        }
+        return m_enclosing->get(key);
     }
     return m_variables[key];
 }
@@ -37,7 +53,11 @@ void Environment::assign(std::string key, LiteralValues value)
 {
     if (!m_variables.contains(key))
     {
-        throw EnvironmentException{ key };
+        if (m_isRootNode || m_enclosing == nullptr)
+        {
+            throw EnvironmentException{ key };
+        }
+        return m_enclosing->assign(key, value);
     }
     m_variables[key] = value;
 }

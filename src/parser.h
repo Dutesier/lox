@@ -52,9 +52,13 @@ private:
 
     // statement      → expression
     //                  | "print" expression
+    //                  | block ;
     StatementUPTR statement();
     StatementUPTR printStatement();
     StatementUPTR expressionStatement();
+
+    // block          → "{" declaration* "}" ;
+    StatementUPTR block();
 
     // expression     → assignement ;
     ExpressionUPTR expression();

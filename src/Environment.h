@@ -18,6 +18,7 @@
 
 #include "BaseExpression.h"
 
+#include <optional>
 #include <unordered_map>
 
 namespace lox
@@ -26,12 +27,24 @@ namespace lox
 class Environment
 {
 public:
+    explicit Environment(Environment* parent = nullptr);
+    // Environment& operator=(const Environment& other);
+    // Environment(const Environment& other);
+
+    // Environment& operator=(Environment&& other);
+    // Environment(Environment&& other);
+
     void define(std::string key, LiteralValues value);
     LiteralValues get(const std::string& key);
     void assign(std::string key, LiteralValues value);
 
 private:
     std::unordered_map<std::string, LiteralValues> m_variables;
+
+    // This would be the ideal architecture but it's not supported:
+    // std::optional<Environment&> m_enclosing;
+    Environment* m_enclosing = nullptr;
+    const bool m_isRootNode;
 
 public:
     // Custom exception class

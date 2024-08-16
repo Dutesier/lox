@@ -74,6 +74,10 @@ StatementUPTR Parser::statement()
     {
         return printStatement();
     }
+    if (match(TokenType::LeftBrace))
+    {
+        return block();
+    }
     return expressionStatement();
 }
 
@@ -91,6 +95,18 @@ StatementUPTR Parser::expressionStatement()
     auto value = expression();
     consumeOrThrow(TokenType::Semicolon, "Expect ';' after value.");
     return std::make_unique<ExpressionStatement>(std::move(value));
+}
+
+StatementUPTR Parser::block()
+{
+    std::vector<StatementUPTR> statements;
+
+    while (!checkCurrentToken(RightBrace) && !isAtEnd())
+    {
+        statements.emplace_back(declaration());
+    }
+    consumeOrThrow(RightBrace, "Expected '}' after block.");
+    return std::make_unique<BlockStatement>(std::move(statements));
 }
 
 ExpressionUPTR Parser::expression()

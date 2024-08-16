@@ -22,6 +22,7 @@
 #include <memory>
 #include <type_traits>
 #include <variant>
+#include <vector>
 
 namespace lox
 {
@@ -29,6 +30,7 @@ namespace lox
 class ExpressionStatement;
 class PrintStatement;
 class VarStatement;
+class BlockStatement;
 
 class StatementVisitor
 {
@@ -38,6 +40,7 @@ public:
     virtual void visit(const ExpressionStatement& statement) = 0;
     virtual void visit(const PrintStatement& statement) = 0;
     virtual void visit(const VarStatement& statement) = 0;
+    virtual void visit(const BlockStatement& statement) = 0;
 };
 
 class Statement
@@ -87,6 +90,19 @@ public:
 
     Token name;
     std::unique_ptr<Expression> expr;
+};
+
+class BlockStatement : public Statement
+{
+public:
+    BlockStatement(std::vector<std::unique_ptr<Statement>> statements)
+        : statements(std::move(statements))
+    {
+    }
+
+    void accept(StatementVisitor& visitor) const { visitor.visit(*this); };
+
+    std::vector<std::unique_ptr<Statement>> statements;
 };
 
 } // namespace lox

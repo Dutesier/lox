@@ -51,6 +51,7 @@ public:
     void visit(const PrintStatement& stmt) override;
     void visit(const ExpressionStatement& stmt) override;
     void visit(const VarStatement& stmt) override;
+    void visit(const BlockStatement& stmt) override;
 
 private:
     int interpretFile();
@@ -64,7 +65,7 @@ private:
     std::optional<std::filesystem::path> m_path;
     std::unique_ptr<Lexer> m_lexer;
     std::unique_ptr<Parser> m_parser;
-    Environment m_env;
+    std::unique_ptr<Environment> m_env;
     Logger m_logger;
 
 public:
