@@ -28,11 +28,6 @@ class Environment
 {
 public:
     explicit Environment(Environment* parent = nullptr);
-    // Environment& operator=(const Environment& other);
-    // Environment(const Environment& other);
-
-    // Environment& operator=(Environment&& other);
-    // Environment(Environment&& other);
 
     void define(std::string key, LiteralValues value);
     LiteralValues get(const std::string& key);

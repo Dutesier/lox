@@ -226,6 +226,18 @@ void Interpreter::visit(const BlockStatement& stmt)
     m_env = std::move(previous);
 }
 
+void Interpreter::visit(const IfStatement& stmt)
+{
+    if (isTruthy(evaluate(*stmt.condition)))
+    {
+        stmt.thenBranch->accept(*this);
+    }
+    else if (stmt.elseBranch.has_value())
+    {
+        stmt.elseBranch.value()->accept(*this);
+    }
+}
+
 void Interpreter::logError(unsigned int line, std::string_view location, std::string_view message)
 {
     m_logger.error(std::format("[line {}] {}: {}", line, location, message));
@@ -331,6 +343,28 @@ LiteralValues Interpreter::visit(const AssignmentExpression& expr)
     auto value = evaluate(*expr.expr);
     m_env->assign(key, value);
     return value;
+}
+
+LiteralValues Interpreter::visit(const LogicalExpression& expr)
+{
+    auto left = evaluate(*expr.left);
+
+    if (expr.op.type == TokenType::Or)
+    {
+        if (isTruthy(left))
+        {
+            return left;
+        }
+    }
+    else
+    {
+        if (!isTruthy(left))
+        {
+            return left;
+        }
+    }
+
+    return evaluate(*expr.right);
 }
 
 } // namespace lox

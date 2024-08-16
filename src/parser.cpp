@@ -70,6 +70,10 @@ StatementUPTR Parser::varDeclaration()
 
 StatementUPTR Parser::statement()
 {
+    if (match(TokenType::If))
+    {
+        return ifStatement();
+    }
     if (match(TokenType::Print))
     {
         return printStatement();
@@ -95,6 +99,21 @@ StatementUPTR Parser::expressionStatement()
     auto value = expression();
     consumeOrThrow(TokenType::Semicolon, "Expect ';' after value.");
     return std::make_unique<ExpressionStatement>(std::move(value));
+}
+
+StatementUPTR Parser::ifStatement()
+{
+    consumeOrThrow(LeftParen, "Expected '(' after 'if'.");
+    auto expr = expression();
+    consumeOrThrow(RightParen, "Expected ')' after if condition.");
+
+    auto thenBranch = statement();
+    std::optional<StatementUPTR> elseBranch;
+    if (match(Else))
+    {
+        elseBranch = statement();
+    }
+    return std::make_unique<IfStatement>(std::move(expr), std::move(thenBranch), std::move(elseBranch));
 }
 
 StatementUPTR Parser::block()
@@ -149,11 +168,37 @@ ExpressionUPTR Parser::assignment()
 ExpressionUPTR Parser::comma()
 {
     // Logger::debug("comma");
-    ExpressionProducingFn lowerPrecedenceFn = [this]() { return equality(); };
+    ExpressionProducingFn lowerPrecedenceFn = [this]() { return logicOr(); };
     MatchingFn matchingFn = [this]()
     {
         using enum TokenType;
         return match(Comma);
+    };
+
+    return buildBinaryExpression(std::move(lowerPrecedenceFn), std::move(matchingFn));
+}
+
+ExpressionUPTR Parser::logicOr()
+{
+    // Logger::debug("logicOr");
+    ExpressionProducingFn lowerPrecedenceFn = [this]() { return logicAnd(); };
+    MatchingFn matchingFn = [this]()
+    {
+        using enum TokenType;
+        return match(Or);
+    };
+
+    return buildBinaryExpression(std::move(lowerPrecedenceFn), std::move(matchingFn));
+}
+
+ExpressionUPTR Parser::logicAnd()
+{
+    // Logger::debug("logicAnd");
+    ExpressionProducingFn lowerPrecedenceFn = [this]() { return equality(); };
+    MatchingFn matchingFn = [this]()
+    {
+        using enum TokenType;
+        return match(And);
     };
 
     return buildBinaryExpression(std::move(lowerPrecedenceFn), std::move(matchingFn));

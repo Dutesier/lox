@@ -52,10 +52,15 @@ private:
 
     // statement      → expression
     //                  | "print" expression
+    //                  | ifStatement
     //                  | block ;
+
     StatementUPTR statement();
     StatementUPTR printStatement();
     StatementUPTR expressionStatement();
+    // ifStatement    → "if" "(" expression ")" statement
+    //                ( "else" statement )? ;
+    StatementUPTR ifStatement();
 
     // block          → "{" declaration* "}" ;
     StatementUPTR block();
@@ -64,8 +69,12 @@ private:
     ExpressionUPTR expression();
     // assignment     → IDENTIFIER '=' comma;
     ExpressionUPTR assignment();
-    // comma          → ternary ( ","  ternary )* ;
+    // comma          → logicOr ( ","  logicOr )* ;
     ExpressionUPTR comma();
+    // logic_or       → logic_and ( "or" logic_and )* ;
+    ExpressionUPTR logicOr();
+    // logic_and      → equality ( "and" equality )* ;
+    ExpressionUPTR logicAnd();
     // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
     ExpressionUPTR equality();
     // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;

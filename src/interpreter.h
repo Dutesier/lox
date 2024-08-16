@@ -47,11 +47,13 @@ public:
     LiteralValues visit(const UnaryExpression& expr) override;
     LiteralValues visit(const VariableExpression& expr) override;
     LiteralValues visit(const AssignmentExpression& expr) override;
+    LiteralValues visit(const LogicalExpression& expr) override;
 
     void visit(const PrintStatement& stmt) override;
     void visit(const ExpressionStatement& stmt) override;
     void visit(const VarStatement& stmt) override;
     void visit(const BlockStatement& stmt) override;
+    void visit(const IfStatement& stmt) override;
 
 private:
     int interpretFile();

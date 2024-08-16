@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <type_traits>
 #include <variant>
 #include <vector>
@@ -31,6 +32,7 @@ class ExpressionStatement;
 class PrintStatement;
 class VarStatement;
 class BlockStatement;
+class IfStatement;
 
 class StatementVisitor
 {
@@ -41,6 +43,7 @@ public:
     virtual void visit(const PrintStatement& statement) = 0;
     virtual void visit(const VarStatement& statement) = 0;
     virtual void visit(const BlockStatement& statement) = 0;
+    virtual void visit(const IfStatement& statement) = 0;
 };
 
 class Statement
@@ -103,6 +106,26 @@ public:
     void accept(StatementVisitor& visitor) const { visitor.visit(*this); };
 
     std::vector<std::unique_ptr<Statement>> statements;
+};
+
+class IfStatement : public Statement
+{
+public:
+    IfStatement(
+        std::unique_ptr<Expression> condition,
+        std::unique_ptr<Statement> thenBranch,
+        std::optional<std::unique_ptr<Statement>> elseBranch = std::nullopt)
+        : condition(std::move(condition))
+        , thenBranch(std::move(thenBranch))
+        , elseBranch(std::move(elseBranch))
+    {
+    }
+
+    void accept(StatementVisitor& visitor) const { visitor.visit(*this); };
+
+    std::unique_ptr<Expression> condition;
+    std::unique_ptr<Statement> thenBranch;
+    std::optional<std::unique_ptr<Statement>> elseBranch;
 };
 
 } // namespace lox

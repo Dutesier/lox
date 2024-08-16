@@ -82,6 +82,18 @@ public:
         std::cout << ")";
         return NullLiteral{};
     }
+
+    LiteralValues visit(const LogicalExpression& expr) override
+    {
+        std::cout << "Logical(";
+        std::cout << "OP: " << expr.op;
+        std::cout << ", Left: ";
+        expr.left->accept(*this);
+        std::cout << ", Right: ";
+        expr.right->accept(*this);
+        std::cout << ")";
+        return NullLiteral{};
+    }
 };
 
 } // namespace lox

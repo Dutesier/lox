@@ -38,6 +38,7 @@ class UnaryExpression;
 class GroupingExpression;
 class VariableExpression;
 class AssignmentExpression;
+class LogicalExpression;
 
 class ExpressionVisitor
 {
@@ -50,6 +51,7 @@ public:
     virtual LiteralValues visit(const GroupingExpression& expr) = 0;
     virtual LiteralValues visit(const VariableExpression& expr) = 0;
     virtual LiteralValues visit(const AssignmentExpression& expr) = 0;
+    virtual LiteralValues visit(const LogicalExpression& expr) = 0;
 };
 
 class Expression
@@ -145,6 +147,23 @@ public:
 
     Token name;
     std::unique_ptr<Expression> expr;
+};
+
+class LogicalExpression : public Expression
+{
+public:
+    LogicalExpression(std::unique_ptr<Expression> left, Token op, std::unique_ptr<Expression> right)
+        : left(std::move(left))
+        , op(std::move(op))
+        , right(std::move(right))
+    {
+    }
+
+    LiteralValues accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
+
+    std::unique_ptr<Expression> left;
+    Token op;
+    std::unique_ptr<Expression> right;
 };
 
 } // namespace lox
