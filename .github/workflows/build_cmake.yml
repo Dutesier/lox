@@ -32,6 +32,7 @@ jobs:
           }
         - {
             name: "Ubuntu Latest GCC", artifact: "Linux",
+            container: gcc:13,
             os: ubuntu-latest,
             cc: "gcc-13", cxx: "g++-13"
           }
