@@ -32,7 +32,7 @@ jobs:
         #   }
         - {
             name: "Ubuntu Latest GCC", artifact: "Linux",
-            os: ubuntu-latest,
+            os: "ubuntu-24.04",
             cc: "gcc-13", cxx: "g++-13"
           }
         - {
