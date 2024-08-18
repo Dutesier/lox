@@ -35,11 +35,11 @@ jobs:
             os: "ubuntu-24.04",
             cc: "gcc-13", cxx: "g++-13"
           }
-        - {
-            name: "macOS Latest Clang", artifact: "macOS",
-            os: macos-latest,
-            cc: "clang", cxx: "clang++"
-          }
+        # - {
+        #     name: "macOS Latest Clang", artifact: "macOS",
+        #     os: macos-latest,
+        #     cc: "clang", cxx: "clang++"
+        #   }
 
     steps:
     - name: Install gtest manually

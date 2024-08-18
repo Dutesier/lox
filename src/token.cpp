@@ -114,6 +114,7 @@ std::string tokenTypeToString(TokenType type)
         return "ERROR";
     default:
         assert(false);
+        return "";
     }
 }
 
