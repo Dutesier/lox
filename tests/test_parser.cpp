@@ -37,7 +37,7 @@ protected:
 TEST_F(TestParser, parseTokenExpression)
 {
     using enum TokenType;
-    std::vector<Token> tokens{ { Number, 42.42, "", 1 }, { Plus }, { Number, 42.42, "", 1 }, { Eof } };
+    std::vector<Token> tokens{ { Number, 42.42, "", 1 }, { Plus }, { Number, 42.42, "", 1 }, { Semicolon }, { Eof } };
 
     Parser parser(tokens);
     auto expressionPtrOpt = parser.parse();
