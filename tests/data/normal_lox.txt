@@ -1,2 +1,2 @@
-Hello world,
-I'm lox
+var hello = "Hello, world!";
+print hello;

@@ -63,7 +63,7 @@ TEST_F(TestInterpreter, localHelloWorldFile)
 
 TEST_F(TestInterpreter, stdinReading)
 {
-    std::string simulatedStdin = "Hello, World!\n";
+    std::string simulatedStdin = "var Hello  = 42;\n";
     redirect_stdin(simulatedStdin);
 
     lox::Interpreter interpreter;
