@@ -15,17 +15,23 @@
  ******************************************************************************/
 
 #include "lox.h"
-#include "interpreter.h"
+#include "Interpreter.h"
 
 #include <iostream>
 
 namespace lox
 {
 
-void run()
+int run()
 {
     Interpreter interpreter;
-    interpreter.run();
+    return interpreter.run();
+}
+
+int run(const std::string& filepath)
+{
+    Interpreter interpreter(filepath);
+    return interpreter.run();
 }
 
 } // namespace lox

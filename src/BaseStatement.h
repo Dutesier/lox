@@ -33,6 +33,7 @@ class PrintStatement;
 class VarStatement;
 class BlockStatement;
 class IfStatement;
+class WhileStatement;
 
 class StatementVisitor
 {
@@ -44,6 +45,7 @@ public:
     virtual void visit(const VarStatement& statement) = 0;
     virtual void visit(const BlockStatement& statement) = 0;
     virtual void visit(const IfStatement& statement) = 0;
+    virtual void visit(const WhileStatement& statement) = 0;
 };
 
 class Statement
@@ -126,6 +128,20 @@ public:
     std::unique_ptr<Expression> condition;
     std::unique_ptr<Statement> thenBranch;
     std::optional<std::unique_ptr<Statement>> elseBranch;
+};
+
+class WhileStatement : public Statement {
+public:
+    WhileStatement(std::unique_ptr<Expression> condition, std::unique_ptr<Statement> body)
+        : condition(std::move(condition))
+        , body(std::move(body))
+    {
+    }
+
+    void accept(StatementVisitor& visitor) const { visitor.visit(*this); };
+
+    std::unique_ptr<Expression> condition;
+    std::unique_ptr<Statement> body;
 };
 
 } // namespace lox

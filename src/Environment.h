@@ -33,6 +33,9 @@ public:
     LiteralValues get(const std::string& key);
     void assign(std::string key, LiteralValues value);
 
+    // TODO: delete
+    void debug();
+
 private:
     std::unordered_map<std::string, LiteralValues> m_variables;
 

@@ -14,7 +14,7 @@
  *
  ******************************************************************************/
 
-#include "interpreter.h"
+#include "Interpreter.h"
 
 #include "AstPrinter.hpp" // Debugging
 
@@ -238,6 +238,14 @@ void Interpreter::visit(const IfStatement& stmt)
     }
 }
 
+void Interpreter::visit(const WhileStatement& stmt)
+{
+    while (isTruthy(evaluate(*stmt.condition)))
+    {
+        stmt.body->accept(*this);
+    }
+}
+
 void Interpreter::logError(unsigned int line, std::string_view location, std::string_view message)
 {
     m_logger.error(std::format("[line {}] {}: {}", line, location, message));
@@ -347,6 +355,7 @@ LiteralValues Interpreter::visit(const AssignmentExpression& expr)
 
 LiteralValues Interpreter::visit(const LogicalExpression& expr)
 {
+    // Logger::debug("Visiting logical expression");
     auto left = evaluate(*expr.left);
 
     if (expr.op.type == TokenType::Or)

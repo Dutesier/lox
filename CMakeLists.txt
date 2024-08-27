@@ -20,11 +20,11 @@ add_compile_options(-Wall -Werror -Wextra)
 # Define source files
 set(SRC_FILES 
     src/lox.cpp
-    src/interpreter.cpp
-    src/logger.cpp
-    src/lexer.cpp
-    src/parser.cpp
-    src/token.cpp
+    src/Interpreter.cpp
+    src/Logger.cpp
+    src/Lexer.cpp
+    src/Parser.cpp
+    src/Token.cpp
     src/BaseExpression.cpp
     src/Environment.cpp
     )
@@ -45,11 +45,11 @@ enable_testing()
 
 # Add the test executable
 add_executable(LoxTest 
-    tests/test_AstPrinter.cpp
-    tests/test_lox.cpp
-    tests/test_interpreter.cpp
-    tests/test_lexer.cpp
-    tests/test_parser.cpp
+    tests/AstPrinter_test.cpp
+    tests/lox_test.cpp
+    tests/Interpreter_test.cpp
+    tests/Lexer_test.cpp
+    tests/Parser_test.cpp
     )
 
 

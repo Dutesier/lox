@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 #include "../src/AstPrinter.hpp"
-#include "../src/parser.h"
+#include "../src/Parser.h"
 
 #include <experimental/source_location>
 #include <gtest/gtest.h>

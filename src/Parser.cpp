@@ -14,9 +14,9 @@
  *
  ******************************************************************************/
 
-#include "parser.h"
+#include "Parser.h"
 
-#include "logger.h"
+#include "Logger.h"
 
 namespace lox
 {
@@ -70,6 +70,10 @@ StatementUPTR Parser::varDeclaration()
 
 StatementUPTR Parser::statement()
 {
+    if (match(For))
+    {
+        return forStatement();
+    }
     if (match(TokenType::If))
     {
         return ifStatement();
@@ -78,11 +82,77 @@ StatementUPTR Parser::statement()
     {
         return printStatement();
     }
+    if (match(TokenType::While))
+    {
+        return whileStatement();
+    }
     if (match(TokenType::LeftBrace))
     {
         return block();
     }
     return expressionStatement();
+}
+
+StatementUPTR Parser::forStatement()
+{
+    consumeOrThrow(LeftParen, "Expected '(' after 'for'.");
+
+    // Initializer
+    StatementUPTR initializer;
+    if (match(Semicolon))
+    {
+        initializer = nullptr;
+    }
+    else if (match(Var))
+    {
+        initializer = varDeclaration();
+    }
+    else
+    {
+        initializer = expressionStatement();
+    }
+
+    ExpressionUPTR condition;
+    if (!checkCurrentToken(Semicolon))
+    {
+        condition = expression();
+    }
+    consumeOrThrow(Semicolon, "Expect ';' after loop condition.");
+
+    ExpressionUPTR increment;
+    if (!checkCurrentToken(RightParen))
+    {
+        increment = expression();
+    }
+    consumeOrThrow(RightParen, "Expect ')' after for clauses.");
+
+    StatementUPTR body = statement();
+
+    if (increment)
+    {
+        StatementUPTR incrementStatement = std::make_unique<ExpressionStatement>(std::move(increment));
+        std::vector<StatementUPTR> statements;
+        statements.emplace_back(std::move(body));
+        statements.emplace_back(std::move(incrementStatement));
+        body = std::make_unique<BlockStatement>(std::move(statements));
+    }
+
+    if (!condition)
+    {
+        condition = std::make_unique<LiteralExpression>(true);
+    }
+
+    body = std::make_unique<WhileStatement>(std::move(condition), std::move(body));
+
+    if (!initializer)
+    {
+        std::vector<StatementUPTR> statements;
+        statements.emplace_back(std::move(initializer));
+        statements.emplace_back(std::move(body));
+        body = std::make_unique<BlockStatement>(std::move(statements));
+    }
+
+    return body;
 }
 
 StatementUPTR Parser::printStatement()
@@ -114,6 +184,16 @@ StatementUPTR Parser::ifStatement()
         elseBranch = statement();
     }
     return std::make_unique<IfStatement>(std::move(expr), std::move(thenBranch), std::move(elseBranch));
+}
+
+StatementUPTR Parser::whileStatement()
+{
+    consumeOrThrow(LeftParen, "Expected '(' after 'while'.");
+    auto condition = expression();
+    consumeOrThrow(RightParen, "Expected ')' after condition.");
+    auto body = statement();
+
+    return std::make_unique<WhileStatement>(std::move(condition), std::move(body));
 }
 
 StatementUPTR Parser::block()
@@ -181,27 +261,27 @@ ExpressionUPTR Parser::comma()
 ExpressionUPTR Parser::logicOr()
 {
     // Logger::debug("logicOr");
-    ExpressionProducingFn lowerPrecedenceFn = [this]() { return logicAnd(); };
-    MatchingFn matchingFn = [this]()
+    ExpressionUPTR expr = logicAnd();
+    while (match(Or))
     {
-        using enum TokenType;
-        return match(Or);
-    };
-
-    return buildBinaryExpression(std::move(lowerPrecedenceFn), std::move(matchingFn));
+        Token op = previous();
+        ExpressionUPTR right = logicAnd();
+        expr = std::make_unique<LogicalExpression>(std::move(expr), op, std::move(right));
+    }
+    return expr;
 }
 
 ExpressionUPTR Parser::logicAnd()
 {
     // Logger::debug("logicAnd");
-    ExpressionProducingFn lowerPrecedenceFn = [this]() { return equality(); };
-    MatchingFn matchingFn = [this]()
+    ExpressionUPTR expr = equality();
+    while (match(And))
     {
-        using enum TokenType;
-        return match(And);
-    };
-
-    return buildBinaryExpression(std::move(lowerPrecedenceFn), std::move(matchingFn));
+        Token op = previous();
+        ExpressionUPTR right = equality();
+        expr = std::make_unique<LogicalExpression>(std::move(expr), op, std::move(right));
+    }
+    return expr;
 }
 
 ExpressionUPTR Parser::equality()

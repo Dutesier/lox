@@ -18,7 +18,17 @@
 
 #include "lox.h"
 
-int main()
+int main(int argc, char** argv)
 {
-    lox::run();
+    if (argc < 2)
+    {
+        return lox::run();
+    }
+
+    if (std::string filepath = { argv[1] }; !filepath.empty())
+    {
+        return lox::run(filepath);
+    }
+
+    return EXIT_FAILURE;
 }

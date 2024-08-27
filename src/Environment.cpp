@@ -16,12 +16,14 @@
 
 #include "Environment.h"
 
+#include "Logger.h" // TODO: remove
+
 namespace lox
 {
 
 Environment::Environment(Environment* parent)
     : m_enclosing(parent)
-    , m_isRootNode(m_enclosing != nullptr)
+    , m_isRootNode(m_enclosing == nullptr)
 {
 }
 
@@ -34,6 +36,14 @@ Environment::Environment(Environment* parent)
 void Environment::define(std::string key, LiteralValues value)
 {
     m_variables[std::move(key)] = std::move(value);
+}
+
+void Environment::debug()
+{
+    for (auto i = m_variables.begin(); i != m_variables.end(); ++i)
+    {
+        Logger::debug(std::format("{}: {}", i->first, print(i->second)));
+    }
 }
 
 LiteralValues Environment::get(const std::string& key)

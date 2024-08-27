@@ -18,7 +18,7 @@
 
 #include "BaseExpression.h"
 #include "BaseStatement.h"
-#include "token.h"
+#include "Token.h"
 
 #include <functional>
 #include <optional>
@@ -52,7 +52,9 @@ private:
 
     // statement      → expression
     //                  | "print" expression
+    //                  | forStatement
     //                  | ifStatement
+    //                  | whileStatement
     //                  | block ;
 
     StatementUPTR statement();
@@ -61,7 +63,12 @@ private:
     // ifStatement    → "if" "(" expression ")" statement
     //                ( "else" statement )? ;
     StatementUPTR ifStatement();
-
+    // forStatement    → "for" "(" ( varDecl | exprStmt | ";" )
+    //                   expression? ";"
+    //                   expression? ")" statement ;
+    StatementUPTR forStatement();
+    // whileStmt      → "while" "(" expression ")" statement ;
+    StatementUPTR whileStatement();
     // block          → "{" declaration* "}" ;
     StatementUPTR block();
 

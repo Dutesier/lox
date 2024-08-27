@@ -16,10 +16,11 @@
 #pragma once
 
 #include <iostream>
-
+#include <string>
 namespace lox
 {
 
-void run();
+int run();
+int run(const std::string& filepath);
 
 } // namespace lox

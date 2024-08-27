@@ -14,8 +14,8 @@
  *
  ******************************************************************************/
 
-#include "lexer.h"
-#include "logger.h"
+#include "Lexer.h"
+#include "Logger.h"
 
 #include <sstream>
 #include <string>

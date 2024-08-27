@@ -14,7 +14,7 @@
  *
  ******************************************************************************/
 
-#include "../src/interpreter.h"
+#include "../src/Interpreter.h"
 
 #include <experimental/source_location>
 #include <gtest/gtest.h>

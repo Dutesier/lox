@@ -14,7 +14,7 @@
  *
  ******************************************************************************/
 
-#include "../src/lexer.h"
+#include "../src/Lexer.h"
 
 #include <experimental/source_location>
 #include <gtest/gtest.h>

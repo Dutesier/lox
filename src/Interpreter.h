@@ -17,9 +17,9 @@
 #pragma once
 
 #include "Environment.h"
-#include "lexer.h"
-#include "logger.h"
-#include "parser.h"
+#include "Lexer.h"
+#include "Logger.h"
+#include "Parser.h"
 
 #include "BaseExpression.h"
 #include "BaseStatement.h"
@@ -54,6 +54,7 @@ public:
     void visit(const VarStatement& stmt) override;
     void visit(const BlockStatement& stmt) override;
     void visit(const IfStatement& stmt) override;
+    void visit(const WhileStatement& stmt) override;
 
 private:
     int interpretFile();
