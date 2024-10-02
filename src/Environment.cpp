@@ -17,40 +17,69 @@
 #include "Environment.h"
 
 #include "Logger.h" // TODO: remove
+#include <format>
+#include <memory>
+#include <string>
 
 namespace lox
 {
 
-Environment::Environment(Environment* parent)
-    : m_enclosing(parent)
-    , m_isRootNode(m_enclosing == nullptr)
+unsigned int Environment::globalId = 1;
+Environment::Environment(std::shared_ptr<Environment> parent)
+    : m_enclosing(std::move(parent))
+    , m_isRootNode(false)
 {
+
+    id = Environment::globalId++;
+    Logger::info(std::format("Instantiated new env with id {} and enclosing id {}", id, m_enclosing->id));
+    // Environment::globalId = Environment::globalId + 1;
 }
 
-// Environment& Environment::operator=(const Environment& other){}
-// Environment::Environment(const Environment& other){}
-
-// Environment::Environment& operator=(Environment&& other){}
-// Environment::Environment(Environment&& other){}
-
-void Environment::define(std::string key, LiteralValues value)
+Environment::Environment()
+    : m_enclosing(nullptr) // This shall never be used
+    , m_isRootNode(true)
 {
+    id = Environment::globalId++;
+    Logger::info(std::format("Instantiated new env with id {} and NO enclosing env", id));
+}
+
+Environment::~Environment()
+{
+    Logger::warn(std::format("Destroyed env {}", id));
+}
+
+void Environment::define(std::string key, Object value)
+{
+    Logger::warn(std::format(
+        "Defining {} on env-{} [{}]", key, id, m_isRootNode ? "ROOT" : "LEAF->" + std::to_string(m_enclosing->id)));
     m_variables[std::move(key)] = std::move(value);
 }
 
-void Environment::debug()
+void Environment::debug() const
 {
+    std::string envString = std::format("Environment {} {{", id);
     for (auto i = m_variables.begin(); i != m_variables.end(); ++i)
     {
-        Logger::debug(std::format("{}: {}", i->first, print(i->second)));
+        envString += std::format(R"("{}": {},)", i->first, print(i->second));
     }
+    if (!m_variables.empty())
+    {
+        envString.pop_back();
+    }
+    envString += "}";
+    Logger::info(envString);
 }
 
-LiteralValues Environment::get(const std::string& key)
+Object Environment::get(const std::string& key)
 {
+    Logger::warn(std::format(
+        "Trying to get {} on env-{} [{}]",
+        key,
+        id,
+        m_isRootNode ? "ROOT" : "LEAF->" + std::to_string(m_enclosing->id)));
     if (!m_variables.contains(key))
     {
-        if (m_isRootNode || m_enclosing == nullptr)
+        if (m_isRootNode)
         {
             throw EnvironmentException{ key };
         }
@@ -59,11 +88,14 @@ LiteralValues Environment::get(const std::string& key)
     return m_variables[key];
 }
 
-void Environment::assign(std::string key, LiteralValues value)
+void Environment::assign(std::string key, Object value)
 {
+    Logger::warn(std::format(
+        "Assigning {} on env-{} [{}]", key, id, m_isRootNode ? "ROOT" : "LEAF->" + std::to_string(m_enclosing->id)));
+
     if (!m_variables.contains(key))
     {
-        if (m_isRootNode || m_enclosing == nullptr)
+        if (m_isRootNode)
         {
             throw EnvironmentException{ key };
         }

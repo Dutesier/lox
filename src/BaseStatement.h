@@ -34,6 +34,8 @@ class VarStatement;
 class BlockStatement;
 class IfStatement;
 class WhileStatement;
+class FunctionStatement;
+class ReturnStatement;
 
 class StatementVisitor
 {
@@ -46,6 +48,8 @@ public:
     virtual void visit(const BlockStatement& statement) = 0;
     virtual void visit(const IfStatement& statement) = 0;
     virtual void visit(const WhileStatement& statement) = 0;
+    virtual void visit(const FunctionStatement& statement) = 0;
+    virtual void visit(const ReturnStatement& statement) = 0;
 };
 
 class Statement
@@ -142,6 +146,38 @@ public:
 
     std::unique_ptr<Expression> condition;
     std::unique_ptr<Statement> body;
+};
+
+class FunctionStatement : public Statement
+{
+public:
+    FunctionStatement(Token name, std::vector<Token> params, std::vector<std::unique_ptr<Statement>> body)
+        : name(std::move(name))
+        , params(std::move(params))
+        , body(std::move(body))
+    {
+    }
+
+    void accept(StatementVisitor& visitor) const { visitor.visit(*this); };
+
+    Token name;
+    std::vector<Token> params;
+    std::vector<std::unique_ptr<Statement>> body;
+};
+
+class ReturnStatement : public Statement
+{
+public:
+    ReturnStatement(Token keyword, std::optional<std::unique_ptr<Expression>> value)
+        : keyword(std::move(keyword))
+        , value(std::move(value))
+    {
+    }
+
+    void accept(StatementVisitor& visitor) const { visitor.visit(*this); };
+
+    Token keyword;
+    std::optional<std::unique_ptr<Expression>> value;
 };
 
 } // namespace lox

@@ -32,7 +32,7 @@ public:
         std::cout << std::endl;
     }
 
-    LiteralValues visit(const BinaryExpression& expr) override
+    Object visit(const BinaryExpression& expr) override
     {
         std::cout << "Binary(";
         std::cout << "OP: " << expr.op;
@@ -44,13 +44,13 @@ public:
         return NullLiteral{};
     }
 
-    LiteralValues visit(const LiteralExpression& expr) override
+    Object visit(const LiteralExpression& expr) override
     {
         std::visit([](auto&& value) { std::cout << value; }, expr.value);
         return NullLiteral{};
     }
 
-    LiteralValues visit(const UnaryExpression& expr) override
+    Object visit(const UnaryExpression& expr) override
     {
         std::cout << "Unary( " << expr.op << " ";
         expr.right->accept(*this);
@@ -58,7 +58,7 @@ public:
         return NullLiteral{};
     }
 
-    LiteralValues visit(const GroupingExpression& expr) override
+    Object visit(const GroupingExpression& expr) override
     {
         std::cout << "Grouping(";
         expr.expression->accept(*this);
@@ -66,7 +66,7 @@ public:
         return NullLiteral{};
     }
 
-    LiteralValues visit(const VariableExpression& expr) override
+    Object visit(const VariableExpression& expr) override
     {
         std::cout << "Variable("
                   << " Name: " << expr.name;
@@ -74,7 +74,7 @@ public:
         return NullLiteral{};
     }
 
-    LiteralValues visit(const AssignmentExpression& expr) override
+    Object visit(const AssignmentExpression& expr) override
     {
         std::cout << "Assignment("
                   << " Name: " << expr.name;
@@ -83,7 +83,7 @@ public:
         return NullLiteral{};
     }
 
-    LiteralValues visit(const LogicalExpression& expr) override
+    Object visit(const LogicalExpression& expr) override
     {
         std::cout << "Logical(";
         std::cout << "OP: " << expr.op;
@@ -94,6 +94,20 @@ public:
         std::cout << ")";
         return NullLiteral{};
     }
+
+    Object visit(const CallExpression& expr) override
+    {
+        std::cout << "Call(";
+        std::cout << "Callee: ";
+        expr.callee->accept(*this);
+        std::cout << ", Arguments: ";
+        for (const auto& arg : expr.arguments)
+        {
+            arg->accept(*this);
+        }
+        std::cout << ")";
+        return NullLiteral{};
+    };
 };
 
 } // namespace lox

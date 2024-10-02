@@ -14,31 +14,23 @@
  *
  ******************************************************************************/
 
-#include "BaseExpression.h"
+#pragma once
+
+#include "BaseStatement.h"
+#include "Environment.h"
+#include "Object.h"
 
 namespace lox
 {
 
-std::ostream& operator<<(std::ostream& os, NullLiteral /*nl*/)
+class Function : public Callable
 {
-    return os << "null";
-}
+public:
+    Function(const FunctionStatement& declaration, std::shared_ptr<Environment> closure);
 
-std::string print(const LiteralValues& values)
-{
-    if (std::holds_alternative<double>(values))
-    {
-        return std::to_string(std::get<double>(values));
-    }
-    if (std::holds_alternative<bool>(values))
-    {
-        return std::get<bool>(values) ? "true" : "false";
-    }
-    if (std::holds_alternative<std::string>(values))
-    {
-        return std::get<std::string>(values);
-    }
-    return "null";
-}
+private:
+    const FunctionStatement& declaration;
+    std::shared_ptr<Environment> closure;
+};
 
 } // namespace lox

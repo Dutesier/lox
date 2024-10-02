@@ -194,7 +194,6 @@ Token Lexer::getStringToken()
     // Get to end of string
     while (peek() != '"')
     {
-        Logger::debug(std::format("peek is {}", peek()));
         if (isAtEnd())
         {
             return Token{ Error, std::monostate{}, "Unterminated string.", m_line }; // Maybe throw here???

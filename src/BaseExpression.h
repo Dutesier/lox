@@ -18,40 +18,36 @@
 
 #include "Token.h"
 
-#include <iostream>
+#include "Object.h"
+
 #include <memory>
-#include <type_traits>
-#include <variant>
+#include <vector>
 
 namespace lox
 {
 
 class BinaryExpression;
 class LiteralExpression;
-struct NullLiteral
-{
-};
-std::ostream& operator<<(std::ostream& os, NullLiteral /*nl*/);
-using LiteralValues = std::variant<std::string, double, bool, NullLiteral>;
-std::string print(const LiteralValues& values);
 class UnaryExpression;
 class GroupingExpression;
 class VariableExpression;
 class AssignmentExpression;
 class LogicalExpression;
+class CallExpression;
 
 class ExpressionVisitor
 {
 public:
     virtual ~ExpressionVisitor() = default;
 
-    virtual LiteralValues visit(const BinaryExpression& expr) = 0;
-    virtual LiteralValues visit(const LiteralExpression& expr) = 0;
-    virtual LiteralValues visit(const UnaryExpression& expr) = 0;
-    virtual LiteralValues visit(const GroupingExpression& expr) = 0;
-    virtual LiteralValues visit(const VariableExpression& expr) = 0;
-    virtual LiteralValues visit(const AssignmentExpression& expr) = 0;
-    virtual LiteralValues visit(const LogicalExpression& expr) = 0;
+    virtual Object visit(const BinaryExpression& expr) = 0;
+    virtual Object visit(const LiteralExpression& expr) = 0;
+    virtual Object visit(const UnaryExpression& expr) = 0;
+    virtual Object visit(const GroupingExpression& expr) = 0;
+    virtual Object visit(const VariableExpression& expr) = 0;
+    virtual Object visit(const AssignmentExpression& expr) = 0;
+    virtual Object visit(const LogicalExpression& expr) = 0;
+    virtual Object visit(const CallExpression& expr) = 0;
 };
 
 class Expression
@@ -59,7 +55,7 @@ class Expression
 public:
     virtual ~Expression() = default;
     // Accept method for the Visitor pattern
-    virtual LiteralValues accept(ExpressionVisitor& visitor) const = 0;
+    virtual Object accept(ExpressionVisitor& visitor) const = 0;
 };
 
 class BinaryExpression : public Expression
@@ -72,7 +68,7 @@ public:
     {
     }
 
-    LiteralValues accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
+    Object accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
 
     std::unique_ptr<Expression> left;
     Token op;
@@ -83,14 +79,14 @@ class LiteralExpression : public Expression
 {
 
 public:
-    LiteralExpression(LiteralValues value)
+    LiteralExpression(Object value)
         : value(std::move(value))
     {
     }
 
-    LiteralValues accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
+    Object accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
 
-    LiteralValues value;
+    Object value;
 };
 
 class UnaryExpression : public Expression
@@ -102,7 +98,7 @@ public:
     {
     }
 
-    LiteralValues accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
+    Object accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
 
     Token op;
     std::unique_ptr<Expression> right;
@@ -116,7 +112,7 @@ public:
     {
     }
 
-    LiteralValues accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
+    Object accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
 
     std::unique_ptr<Expression> expression;
 };
@@ -129,7 +125,7 @@ public:
     {
     }
 
-    LiteralValues accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
+    Object accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
 
     Token name;
 };
@@ -143,7 +139,7 @@ public:
     {
     }
 
-    LiteralValues accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
+    Object accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
 
     Token name;
     std::unique_ptr<Expression> expr;
@@ -159,11 +155,28 @@ public:
     {
     }
 
-    LiteralValues accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
+    Object accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
 
     std::unique_ptr<Expression> left;
     Token op;
     std::unique_ptr<Expression> right;
+};
+
+class CallExpression : public Expression
+{
+public:
+    CallExpression(std::unique_ptr<Expression> callee, Token paren, std::vector<std::unique_ptr<Expression>> arguments)
+        : callee(std::move(callee))
+        , paren(std::move(paren))
+        , arguments(std::move(arguments))
+    {
+    }
+
+    Object accept(ExpressionVisitor& visitor) const override { return visitor.visit(*this); }
+
+    std::unique_ptr<Expression> callee;
+    Token paren;
+    std::vector<std::unique_ptr<Expression>> arguments;
 };
 
 } // namespace lox

@@ -16,7 +16,13 @@
 
 #include "Parser.h"
 
+#include "BaseExpression.h"
+#include "BaseStatement.h"
 #include "Logger.h"
+#include "Token.h"
+#include <memory>
+#include <optional>
+#include <vector>
 
 namespace lox
 {
@@ -48,11 +54,40 @@ std::vector<StatementUPTR> Parser::parse()
 
 StatementUPTR Parser::declaration()
 {
+    if (match(Fun))
+    {
+        return function("function");
+    }
     if (match(Var))
     {
         return varDeclaration();
     }
     return statement();
+}
+
+StatementUPTR Parser::function(std::string kind)
+{
+    Token name = consumeOrThrow(Identifier, "Expected " + kind + " name.");
+    consumeOrThrow(LeftParen, "Expect '(' after " + kind + " name.");
+    std::vector<Token> parameters;
+    if (!checkCurrentToken(RightParen))
+    {
+        do
+        {
+            if (parameters.size() >= 255)
+            {
+                error(peek(), "Can't have more than 255 parameters.");
+            }
+            parameters.emplace_back(consumeOrThrow(Identifier, "Expect parameter name."));
+        } while (match(Comma));
+    }
+    consumeOrThrow(RightParen, "Expect ')' after parameters.");
+    consumeOrThrow(LeftBrace, "Expect '{' before " + kind + " body.");
+    if (auto&& body = dynamic_cast<BlockStatement*>(block().release()); body)
+    {
+        return std::make_unique<FunctionStatement>(std::move(name), std::move(parameters), std::move(body->statements));
+    }
+    throw error(peek(), "Couldn't create a block statement");
 }
 
 StatementUPTR Parser::varDeclaration()
@@ -81,6 +116,10 @@ StatementUPTR Parser::statement()
     if (match(TokenType::Print))
     {
         return printStatement();
+    }
+    if (match(Return))
+    {
+        return returnStatement();
     }
     if (match(TokenType::While))
     {
@@ -194,6 +233,19 @@ StatementUPTR Parser::whileStatement()
     auto body = statement();
 
     return std::make_unique<WhileStatement>(std::move(condition), std::move(body));
+}
+
+StatementUPTR Parser::returnStatement()
+{
+    auto keyword = previous();
+    std::optional<ExpressionUPTR> value;
+    if (!checkCurrentToken(Semicolon))
+    {
+        value.emplace(expression());
+    }
+    consumeOrThrow(Semicolon, "Expected ';' after return value.");
+
+    return std::make_unique<ReturnStatement>(std::move(keyword), std::move(value));
 }
 
 StatementUPTR Parser::block()
@@ -337,7 +389,41 @@ ExpressionUPTR Parser::unary()
         Token op = previous();
         return std::make_unique<UnaryExpression>(op, std::move(unary()));
     }
-    return primary();
+    return call();
+}
+
+ExpressionUPTR Parser::call()
+{
+    auto expr = primary();
+
+    for (;;)
+    {
+        if (!match(LeftParen))
+        {
+            break;
+        }
+        expr = finishCall(std::move(expr));
+    }
+    return expr;
+}
+
+ExpressionUPTR Parser::finishCall(ExpressionUPTR callee)
+{
+    std::vector<ExpressionUPTR> arguments;
+    if (!checkCurrentToken(RightParen))
+    {
+        do
+        {
+            if (arguments.size() >= 255)
+            {
+                error(peek(), "Can't have more than 255 arguments.");
+            }
+            arguments.emplace_back(expression());
+        } while (match(Comma));
+    }
+
+    Token paren = consumeOrThrow(RightParen, "Expect ')' after arguments.");
+    return std::make_unique<CallExpression>(std::move(callee), paren, std::move(arguments));
 }
 
 namespace

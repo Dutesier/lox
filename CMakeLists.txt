@@ -25,8 +25,9 @@ set(SRC_FILES
     src/Lexer.cpp
     src/Parser.cpp
     src/Token.cpp
-    src/BaseExpression.cpp
+    src/Object.cpp
     src/Environment.cpp
+    src/Function.cpp
     )
 
 # Add the library target
@@ -50,6 +51,7 @@ add_executable(LoxTest
     tests/Interpreter_test.cpp
     tests/Lexer_test.cpp
     tests/Parser_test.cpp
+    tests/Object_test.cpp
     )
 
 

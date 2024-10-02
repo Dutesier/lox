@@ -16,33 +16,36 @@
 
 #pragma once
 
-#include "BaseExpression.h"
+#include "Object.h"
 
-#include <optional>
+#include <exception>
+#include <memory>
 #include <unordered_map>
-
 namespace lox
 {
 
 class Environment
 {
 public:
-    explicit Environment(Environment* parent = nullptr);
+    explicit Environment(std::shared_ptr<Environment> parent);
+    Environment();
+    ~Environment();
 
-    void define(std::string key, LiteralValues value);
-    LiteralValues get(const std::string& key);
-    void assign(std::string key, LiteralValues value);
+    void define(std::string key, Object value);
+    Object get(const std::string& key);
+    void assign(std::string key, Object value);
 
     // TODO: delete
-    void debug();
+    void debug() const;
 
 private:
-    std::unordered_map<std::string, LiteralValues> m_variables;
-
+    std::unordered_map<std::string, Object> m_variables;
     // This would be the ideal architecture but it's not supported:
     // std::optional<Environment&> m_enclosing;
-    Environment* m_enclosing = nullptr;
+    std::shared_ptr<Environment> m_enclosing; // TODO: try again to use references here
     const bool m_isRootNode;
+    unsigned int id;
+    static unsigned int globalId;
 
 public:
     // Custom exception class

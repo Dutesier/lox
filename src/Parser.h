@@ -44,16 +44,22 @@ private:
     using MatchingFn = std::function<bool(void)>;
     using ExpressionProducingFn = std::function<ExpressionUPTR(void)>;
 
-    // declaration    → varDecl
+    // declaration    →  funDecl
+    //                 | varDecl
     //                 | statement ;
     StatementUPTR declaration();
     // "var" IDENTIFIER ( "=" expression )? ";" ;
     StatementUPTR varDeclaration();
+    // funDecl        → "fun" function ;
+    // function       → IDENTIFIER "(" parameters? ")" block ;
+    // parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
+    StatementUPTR function(std::string kind);
 
     // statement      → expression
     //                  | "print" expression
     //                  | forStatement
     //                  | ifStatement
+    //                  | returnStatement
     //                  | whileStatement
     //                  | block ;
 
@@ -69,6 +75,8 @@ private:
     StatementUPTR forStatement();
     // whileStmt      → "while" "(" expression ")" statement ;
     StatementUPTR whileStatement();
+    // returnStmt     → "return" expression? ";" ;
+    StatementUPTR returnStatement();
     // block          → "{" declaration* "}" ;
     StatementUPTR block();
 
@@ -91,8 +99,11 @@ private:
     // factor         → unary ( ( "/" | "*" ) unary )* ;
     ExpressionUPTR factor();
     // unary          → ( "!" | "-" ) unary
-    //                | primary ;
+    //                | call ;
     ExpressionUPTR unary();
+    // call           → primary ( "(" arguments? ")" )* ;
+    // arguments      → expression ( "," expression )*" ;
+    ExpressionUPTR call();
     // primary        → NUMBER | STRING | "true" | "false" | "nil"
     //                | "(" expression ")" | IDENTIFIER ;
     ExpressionUPTR primary();
@@ -102,6 +113,7 @@ private:
     // ExpressionUPTR ternary();
 
     ExpressionUPTR buildBinaryExpression(ExpressionProducingFn lowerPrecedenceFn, MatchingFn matchFn);
+    ExpressionUPTR finishCall(ExpressionUPTR callee);
 
     // Helper functions
     Token peek();

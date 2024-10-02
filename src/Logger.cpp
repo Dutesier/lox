@@ -33,6 +33,24 @@ std::string centerString(std::string_view str, size_t width)
     size_t rightPadding = width - str.size() - leftPadding;
     return std::string(leftPadding, ' ') + std::string{ str } + std::string(rightPadding, ' ');
 }
+
+enum Color
+{
+    Red,
+    Green,
+    Yellow,
+    Blue,
+    Magenta,
+    Cyan,
+    White,
+    Reset
+};
+
+const std::unordered_map<Color, std::string> colorMap = {
+    { Color::Red, "\033[31m" },   { Color::Green, "\033[32m" },   { Color::Yellow, "\033[33m" },
+    { Color::Blue, "\033[34m" },  { Color::Magenta, "\033[35m" }, { Color::Cyan, "\033[36m" },
+    { Color::White, "\033[37m" }, { Color::Reset, "\033[0m" } // Reset to default color
+};
 } // namespace
 
 void Logger::log(LogLevel level, std::string_view data)
@@ -41,8 +59,16 @@ void Logger::log(LogLevel level, std::string_view data)
                                                                                  { LogLevel::Info, "INFO" },
                                                                                  { LogLevel::Warn, "WARN" },
                                                                                  { LogLevel::Error, "ERROR" } };
+
+    static std::unordered_map<Logger::LogLevel, std::string> levelToColorString{
+        { LogLevel::Debug, colorMap.at(Color::Green) },
+        { LogLevel::Info, colorMap.at(Color::Blue) },
+        { LogLevel::Warn, colorMap.at(Color::Yellow) },
+        { LogLevel::Error, colorMap.at(Color::Red) }
+    };
     const auto levelStr = levelToString[level];
-    std::cout << "[" << centerString(levelStr, 7) << "]\t" << data << std::endl;
+    std::cout << levelToColorString[level] << "[" << centerString(levelStr, 7) << "]\t" << data
+              << colorMap.at(Color::Reset) << std::endl;
 }
 
 void Logger::debug(const std::string& data)

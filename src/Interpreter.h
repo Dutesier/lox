@@ -23,11 +23,13 @@
 
 #include "BaseExpression.h"
 #include "BaseStatement.h"
+#include "Object.h"
 
 #include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace lox
 {
@@ -41,13 +43,14 @@ public:
     explicit Interpreter(std::filesystem::path file);
 
     int run();
-    LiteralValues visit(const BinaryExpression& expr) override;
-    LiteralValues visit(const LiteralExpression& expr) override;
-    LiteralValues visit(const GroupingExpression& expr) override;
-    LiteralValues visit(const UnaryExpression& expr) override;
-    LiteralValues visit(const VariableExpression& expr) override;
-    LiteralValues visit(const AssignmentExpression& expr) override;
-    LiteralValues visit(const LogicalExpression& expr) override;
+    Object visit(const BinaryExpression& expr) override;
+    Object visit(const LiteralExpression& expr) override;
+    Object visit(const GroupingExpression& expr) override;
+    Object visit(const UnaryExpression& expr) override;
+    Object visit(const VariableExpression& expr) override;
+    Object visit(const AssignmentExpression& expr) override;
+    Object visit(const LogicalExpression& expr) override;
+    Object visit(const CallExpression& expr) override;
 
     void visit(const PrintStatement& stmt) override;
     void visit(const ExpressionStatement& stmt) override;
@@ -55,20 +58,27 @@ public:
     void visit(const BlockStatement& stmt) override;
     void visit(const IfStatement& stmt) override;
     void visit(const WhileStatement& stmt) override;
+    void visit(const FunctionStatement& statement) override;
+    void visit(const ReturnStatement& statement) override;
+
+    void executeCodeBlock(const std::vector<StatementUPTR>& body, std::shared_ptr<Environment> env);
+    std::shared_ptr<Environment> m_globalEnvironment = std::make_shared<Environment>();
 
 private:
     int interpretFile();
     int interpretStdin();
     int interpret(const std::string& content);
 
-    LiteralValues evaluate(const Expression& expr);
+    void defineNativeFunctions();
+
+    Object evaluate(const Expression& expr);
 
     void logError(unsigned int line, std::string_view location, std::string_view message);
 
     std::optional<std::filesystem::path> m_path;
     std::unique_ptr<Lexer> m_lexer;
     std::unique_ptr<Parser> m_parser;
-    std::unique_ptr<Environment> m_env;
+    std::shared_ptr<Environment> m_env;
     Logger m_logger;
 
 public:
@@ -89,6 +99,23 @@ public:
 
         // Override the what() function to return the error message
         const char* what() const noexcept override { return message.c_str(); }
+    };
+
+    class ReturnException : public std::exception
+    {
+        std::string message;
+
+    public:
+        // Constructor to initialize the exception with an object and custom message
+        ReturnException(const Object& obj)
+            : message("Interpreter Error: Unhandled return.")
+            , obj(obj)
+        {
+        }
+
+        // Override the what() function to return the error message
+        const char* what() const noexcept override { return message.c_str(); }
+        Object obj;
     };
 };
 

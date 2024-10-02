@@ -17,12 +17,25 @@
 #include "Interpreter.h"
 
 #include "AstPrinter.hpp" // Debugging
+#include "BaseExpression.h"
+#include "BaseStatement.h"
+#include "Environment.h"
+#include "Function.h"
+#include "Logger.h"
+#include "Object.h"
+#include "Token.h"
 
 #include <assert.h>
-#include <exception>
+#include <chrono>
+#include <format>
 #include <fstream>
 #include <iostream>
+#include <memory>
+#include <stdexcept>
 #include <typeinfo>
+#include <unistd.h>
+#include <variant>
+#include <vector>
 
 namespace lox
 {
@@ -31,7 +44,7 @@ namespace
 {
 
 // Follows Lox (Ruby)s convention
-bool isTruthy(const LiteralValues& value)
+bool isTruthy(const Object& value)
 {
     if (std::holds_alternative<bool>(value))
     {
@@ -44,7 +57,7 @@ bool isTruthy(const LiteralValues& value)
     return true;
 }
 
-bool isEqual(const LiteralValues& a, const LiteralValues& b)
+bool isEqual(const Object& a, const Object& b)
 {
     if (std::holds_alternative<bool>(a) && std::holds_alternative<bool>(b))
     {
@@ -71,7 +84,7 @@ bool isEqual(const LiteralValues& a, const LiteralValues& b)
     return false;
 }
 
-template <typename T> void assertBothAreType(const Token& tok, const LiteralValues& a, const LiteralValues& b)
+template <typename T> void assertBothAreType(const Token& tok, const Object& a, const Object& b)
 {
     if (std::holds_alternative<T>(a) && std::holds_alternative<T>(b))
     {
@@ -86,7 +99,10 @@ template <typename T> void assertBothAreType(const Token& tok, const LiteralValu
 
 } // namespace
 
-Interpreter::Interpreter() {}
+Interpreter::Interpreter()
+{
+    defineNativeFunctions();
+}
 
 Interpreter::Interpreter(std::filesystem::path path)
     : m_path(std::move(path))
@@ -95,6 +111,37 @@ Interpreter::Interpreter(std::filesystem::path path)
     {
         throw std::domain_error("Invalid file path.");
     }
+    defineNativeFunctions();
+}
+
+void Interpreter::defineNativeFunctions()
+{
+    Callable clock{ .call = [](Interpreter&, const std::vector<Object>&) -> Object {
+                       return static_cast<double>(
+                           std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()));
+                   },
+                    .name = "clock" };
+
+    Callable sleep{ .call = [](Interpreter&, const std::vector<Object>& args) -> Object
+                    {
+                        if (args.empty())
+                        {
+                            throw InterpreterException{ Token{},
+                                                        "Sleep requires one argument" }; // This should never be called
+                        }
+
+                        if (!std::holds_alternative<double>(args[0]))
+                        {
+                            throw InterpreterException{ Token{}, "Sleep requires a double as argument" };
+                        }
+                        ::sleep(std::get<double>(args[0]));
+                        return args[0];
+                    },
+                    .arity = 1,
+                    .name = "sleep" };
+
+    m_globalEnvironment->define(clock.name, clock);
+    m_globalEnvironment->define(sleep.name, sleep);
 }
 
 int Interpreter::run()
@@ -119,7 +166,7 @@ int Interpreter::interpretFile()
     std::string lineBuffer, wholeFile;
     while (getline(file, lineBuffer))
     {
-        wholeFile += lineBuffer;
+        wholeFile += lineBuffer + '\n';
     }
 
     file.close();
@@ -160,7 +207,7 @@ int Interpreter::interpret(const std::string& content)
 
     AstPrinter printer;
 
-    m_env = std::make_unique<Environment>();
+    m_env = m_globalEnvironment;
     for (const auto& stmt : statements)
     {
         try
@@ -190,44 +237,26 @@ void Interpreter::visit(const PrintStatement& stmt)
 
 void Interpreter::visit(const ExpressionStatement& stmt)
 {
+    Logger::error("Visiting ExpressionStatement");
     evaluate(*stmt.expr);
 }
 
 void Interpreter::visit(const VarStatement& stmt)
 {
+    Logger::error("Visiting VarStatement");
     assert(std::holds_alternative<std::string>(stmt.name.literal));
-    LiteralValues value = NullLiteral{};
+    Object value = NullLiteral{};
 
     if (stmt.expr)
     {
         value = evaluate(*stmt.expr);
     }
     m_env->define(std::get<std::string>(stmt.name.literal), value);
-};
-
-void Interpreter::visit(const BlockStatement& stmt)
-{
-    // Store the outer environment
-    std::unique_ptr<Environment> previous = std::move(this->m_env);
-    try
-    {
-        // Create a new environment for the current block
-        m_env = std::make_unique<Environment>(previous.get());
-        for (const auto& statement : stmt.statements)
-        {
-            statement->accept(*this);
-        }
-    }
-    catch (InterpreterException& e)
-    {
-        Logger::error(e.what());
-    }
-    // Reset the environment (a la stack)
-    m_env = std::move(previous);
 }
 
 void Interpreter::visit(const IfStatement& stmt)
 {
+    Logger::error("Visiting IfStatement");
     if (isTruthy(evaluate(*stmt.condition)))
     {
         stmt.thenBranch->accept(*this);
@@ -240,10 +269,39 @@ void Interpreter::visit(const IfStatement& stmt)
 
 void Interpreter::visit(const WhileStatement& stmt)
 {
+    Logger::error("Visiting WhileStatement");
     while (isTruthy(evaluate(*stmt.condition)))
     {
         stmt.body->accept(*this);
     }
+}
+
+void Interpreter::visit(const FunctionStatement& statement)
+{
+    Logger::error("Visiting FunctionStatement");
+    if (m_env == nullptr)
+    {
+        Logger::warn("Nullptr env");
+    }
+    Function fun(statement, m_env);
+    if (!std::holds_alternative<std::string>(statement.name.literal))
+    {
+        return;
+    }
+    fun.name = std::get<std::string>(statement.name.literal);
+    m_env->define(fun.name, fun);
+    return;
+}
+
+void Interpreter::visit(const ReturnStatement& statement)
+{
+    Logger::error("Visiting ReturnStatement");
+    Object value = NullLiteral{};
+    if (statement.value.has_value())
+    {
+        value = evaluate(*statement.value.value());
+    }
+    throw ReturnException{ value };
 }
 
 void Interpreter::logError(unsigned int line, std::string_view location, std::string_view message)
@@ -251,27 +309,27 @@ void Interpreter::logError(unsigned int line, std::string_view location, std::st
     m_logger.error(std::format("[line {}] {}: {}", line, location, message));
 }
 
-LiteralValues Interpreter::evaluate(const Expression& expr)
+Object Interpreter::evaluate(const Expression& expr)
 {
     return expr.accept(*this);
 }
 
-LiteralValues Interpreter::visit(const LiteralExpression& expr)
+Object Interpreter::visit(const LiteralExpression& expr)
 {
     // Temporary
     return expr.value;
 }
 
-LiteralValues Interpreter::visit(const GroupingExpression& expr)
+Object Interpreter::visit(const GroupingExpression& expr)
 {
     return evaluate(*expr.expression);
 }
 
-LiteralValues Interpreter::visit(const BinaryExpression& expr)
+Object Interpreter::visit(const BinaryExpression& expr)
 {
     using enum TokenType;
-    LiteralValues left = evaluate(*(expr.left));
-    LiteralValues right = evaluate(*(expr.right));
+    Object left = evaluate(*(expr.left));
+    Object right = evaluate(*(expr.right));
 
     switch (expr.op.type)
     {
@@ -325,9 +383,9 @@ LiteralValues Interpreter::visit(const BinaryExpression& expr)
     return NullLiteral{};
 }
 
-LiteralValues Interpreter::visit(const UnaryExpression& expr)
+Object Interpreter::visit(const UnaryExpression& expr)
 {
-    LiteralValues right = evaluate(*expr.right);
+    Object right = evaluate(*expr.right);
     if (expr.op.type == TokenType::Minus)
     {
         assert(std::holds_alternative<double>(right));
@@ -338,13 +396,13 @@ LiteralValues Interpreter::visit(const UnaryExpression& expr)
     return !isTruthy(right);
 }
 
-LiteralValues Interpreter::visit(const VariableExpression& expr)
+Object Interpreter::visit(const VariableExpression& expr)
 {
     assert(std::holds_alternative<std::string>(expr.name.literal));
     return m_env->get(std::get<std::string>(expr.name.literal));
 }
 
-LiteralValues Interpreter::visit(const AssignmentExpression& expr)
+Object Interpreter::visit(const AssignmentExpression& expr)
 {
     assert(std::holds_alternative<std::string>(expr.name.literal));
     auto key = std::get<std::string>(expr.name.literal);
@@ -353,7 +411,7 @@ LiteralValues Interpreter::visit(const AssignmentExpression& expr)
     return value;
 }
 
-LiteralValues Interpreter::visit(const LogicalExpression& expr)
+Object Interpreter::visit(const LogicalExpression& expr)
 {
     // Logger::debug("Visiting logical expression");
     auto left = evaluate(*expr.left);
@@ -374,6 +432,72 @@ LiteralValues Interpreter::visit(const LogicalExpression& expr)
     }
 
     return evaluate(*expr.right);
+}
+
+Object Interpreter::visit(const CallExpression& expr)
+{
+    Object callee = evaluate(*expr.callee);
+
+    std::vector<Object> arguments;
+    for (const auto& arg : expr.arguments)
+    {
+        arguments.emplace_back(evaluate(*arg));
+    }
+
+    if (!std::holds_alternative<Callable>(callee))
+    {
+        throw InterpreterException{ expr.paren, "Can only call functions and classes." };
+    }
+    Callable function = std::get<Callable>(callee);
+
+    if (arguments.size() != function.arity)
+    {
+        throw InterpreterException{
+            expr.paren, std::format("Expected {} arguments but got {}.", function.arity, arguments.size())
+        };
+    }
+    return function.call(*this, arguments);
+}
+
+void Interpreter::visit(const BlockStatement& stmt)
+{
+    if (m_env == nullptr)
+    {
+        throw std::domain_error{ "Environment points to null adress" };
+    }
+    auto env = std::make_shared<Environment>(m_env);
+    executeCodeBlock(stmt.statements, env);
+}
+
+void Interpreter::executeCodeBlock(const std::vector<StatementUPTR>& body, std::shared_ptr<Environment> env)
+{
+    Logger::debug("Executing code block. Received env:");
+    env->debug();
+    // Store the outer environment
+    std::shared_ptr<Environment> previous = m_env;
+    try
+    {
+        // Create a new environment for the current block
+        auto blockEnvironment = std::make_shared<Environment>(env);
+        // m_env = std::make_unique<Environment>(&env);
+        m_env = blockEnvironment;
+        Logger::debug("Created env for code block. Current env: ");
+        m_env->debug();
+        for (const auto& statement : body)
+        {
+            statement->accept(*this);
+        }
+        Logger::debug("Finished statements in body");
+    }
+    catch (InterpreterException& e)
+    {
+        Logger::error(e.what());
+    }
+    // Reset the environment (a la stack)
+    Logger::debug("Created env for block no longer needed");
+    m_env = previous;
+    Logger::debug("Restored interpreter current env to: ");
+    m_env->debug();
 }
 
 } // namespace lox
